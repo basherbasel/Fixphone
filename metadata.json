@@ -1,0 +1,6 @@
+{
+  "name": "OmniFix Pro",
+  "description": "Multi-platform smartphone servicing, flashing, FRP bypass, AI diagnostics, and NVRAM/network repair workstation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
