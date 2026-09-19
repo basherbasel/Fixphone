@@ -1,6 +1,6 @@
 {
   "name": "OmniFix Pro",
-  "description": "Multi-platform smartphone servicing, flashing, FRP bypass, AI diagnostics, and NVRAM/network repair workstation.",
+  "description": "منصة احترافية لإصلاح كافة أعطال الهواتف الذكية، وقراءة الأجهزة بجميع أوضاع USB المباشرة، والتفليش، وتخطي الحمايات والشبكة.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
