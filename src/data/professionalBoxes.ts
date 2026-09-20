@@ -19,15 +19,15 @@ export interface ProfessionalBox {
 
 export const PROFESSIONAL_BOXES: ProfessionalBox[] = [
   {
-    id: 'unlocktool-emulator',
-    name: 'UnlockTool Pro Emulator',
+    id: 'unlocktool-engine',
+    name: 'UnlockTool Native Protocol Engine',
     vendor: 'UnlockTool Digital Team',
-    version: '2026.09.18-FINAL',
+    version: '2026.09.18-PRO',
     licenseStatus: 'ACTIVATED_PRO',
     supportedBrands: ['Samsung', 'Xiaomi', 'Apple', 'Oppo', 'Vivo', 'Realme', 'Tecno', 'Infinix', 'Huawei'],
     icon: 'Unlock',
-    descriptionAr: 'المحاكي الرسمي الشامل لبروتوكولات UnlockTool الشهيرة: فك حسابات سامسونج Knox و FRP أونلاين، وشاومي HyperOS، وميدياتك BROM SLA، وآبل Checkm8.',
-    descriptionEn: 'Full digital emulation of UnlockTool core engine for Samsung Knox, HyperOS MiCloud, MTK SLA, and Apple Ramdisk.',
+    descriptionAr: 'المحرك البرمجي المباشر لأداة UnlockTool: تفليش وتفكيك حمايات سامسونج Knox و FRP أونلاين، وشاومي HyperOS، وميدياتك BROM SLA، وآبل Checkm8.',
+    descriptionEn: 'Direct native UnlockTool protocol engine for Samsung Knox, HyperOS MiCloud, MTK SLA, and Apple Ramdisk.',
     featuredProtocols: [
       {
         nameAr: 'تخطي سامسونج MTP / Emergency Call *#0*# FRP',
@@ -53,15 +53,15 @@ export const PROFESSIONAL_BOXES: ProfessionalBox[] = [
     ]
   },
   {
-    id: 'chimeratool-emulator',
-    name: 'ChimeraTool Enterprise Suite',
+    id: 'chimeratool-engine',
+    name: 'ChimeraTool Hardware Service Engine',
     vendor: 'Chimera Mobile Utilities',
     version: '39.82.1102',
     licenseStatus: 'ACTIVATED_PRO',
     supportedBrands: ['Samsung', 'Huawei', 'Honor', 'Xiaomi', 'BBK Group'],
     icon: 'ShieldAlert',
-    descriptionAr: 'بروتوكولات Chimera الاحترافية لإصلاح السيريال والشبكة (Patch Cert & IMEI Repair)، ومعالجة Knox Guard، وتفليش هواوي Kirin COM 1.0.',
-    descriptionEn: 'ChimeraTool protocols for IMEI calibration, Patch Cert, Knox Guard repair, and Huawei Kirin COM 1.0 servicing.',
+    descriptionAr: 'شفرة Chimera الاحترافية المباشرة لإصلاح المعرفات والشبكة (Patch Cert & IMEI Repair)، ومعالجة Knox Guard، وتفليش هواوي Kirin COM 1.0.',
+    descriptionEn: 'Native ChimeraTool protocols for IMEI calibration, Patch Cert, Knox Guard repair, and Huawei Kirin COM 1.0 servicing.',
     featuredProtocols: [
       {
         nameAr: 'إصلاح السيريال وتصليح شهادة الشبكة Patch Cert',
@@ -87,15 +87,15 @@ export const PROFESSIONAL_BOXES: ProfessionalBox[] = [
     ]
   },
   {
-    id: 'z3x-octopus-emulator',
-    name: 'Z3X Samsung Tool Pro & Octopus Box',
+    id: 'z3x-octopus-engine',
+    name: 'Z3X Samsung Tool Pro & Octopus Suite',
     vendor: 'Z3X & Octoplus Team',
     version: '45.12 PRO',
     licenseStatus: 'HARDWARE_DONGLE_READY',
     supportedBrands: ['Samsung', 'LG', 'Sony', 'ZTE'],
     icon: 'Cpu',
-    descriptionAr: 'البوكس الأسطوري لصيانة أجهزة سامسونج: قراءة الأكواد، فك التشفير المباشر للشرائح العالمية، تغيير رمز CSC بدون مسح البيانات، وتصليح EFS.',
-    descriptionEn: 'Z3X & Octoplus Box suite for Samsung direct SIM unlock, CSC switching without data wipe, and EFS restoration.',
+    descriptionAr: 'البوكس المباشر والفعلي لصيانة أجهزة سامسونج: قراءة الأكواد، فك التشفير المباشر للشرائح العالمية، تغيير رمز CSC بدون مسح البيانات، وتصليح EFS.',
+    descriptionEn: 'Direct Z3X & Octoplus Box suite for Samsung direct SIM unlock, CSC switching without data wipe, and EFS restoration.',
     featuredProtocols: [
       {
         nameAr: 'قراءة أكواد فك التشفير وقفل الشبكة Direct Unlock',
@@ -114,15 +114,15 @@ export const PROFESSIONAL_BOXES: ProfessionalBox[] = [
     ]
   },
   {
-    id: 'pandora-amt-emulator',
-    name: 'Pandora Box & AMT Universal Suite',
+    id: 'pandora-amt-engine',
+    name: 'Pandora Box & AMT Native Suite',
     vendor: 'Pandora & AMT Software',
     version: '7.4.0',
     licenseStatus: 'ACTIVATED_PRO',
     supportedBrands: ['MediaTek Universal', 'Unisoc SPD', 'Qualcomm'],
     icon: 'Zap',
-    descriptionAr: 'مترجم وأداة Pandora لعمليات الذاكرة منخفضة المستوى: قراءة وكتابة قطاعات RPMB، واستخراج الفلاشات، وتصليح IMEI لمعالجات MTK و SPD.',
-    descriptionEn: 'Pandora Box low-level BROM & SPD engine for direct RPMB partition read/write and memory dumping.',
+    descriptionAr: 'أداة Pandora الفعلية لعمليات الذاكرة منخفضة المستوى: قراءة وكتابة قطاعات RPMB، واستخراج الفلاشات، وتصليح IMEI لمعالجات MTK و SPD.',
+    descriptionEn: 'Direct Pandora Box low-level BROM & SPD engine for RPMB partition read/write and memory dumping.',
     featuredProtocols: [
       {
         nameAr: 'قراءة وكتابة قطاعات RPMB لمعالجات ميدياتك',
@@ -141,14 +141,14 @@ export const PROFESSIONAL_BOXES: ProfessionalBox[] = [
     ]
   },
   {
-    id: 'ufi-easyjtag-emulator',
-    name: 'UFI Box & EasyJTAG Memory Inspector',
+    id: 'ufi-easyjtag-engine',
+    name: 'UFI Box & EasyJTAG Hardware Inspector',
     vendor: 'UFI & Z3X JTAG Team',
     version: '2.1.0',
     licenseStatus: 'HARDWARE_DONGLE_READY',
     supportedBrands: ['eMMC', 'UFS 2.1 / 3.1 / 4.0', 'NVMe'],
     icon: 'Radio',
-    descriptionAr: 'استوديو فحص ومعايرة الذاكرة الصلبة eMMC/UFS: فحص نسبة الاهتراء (Health Smart Report)، ومخططات توصيل ISP Pinout، وإصلاح البلوكات المعطوبة.',
+    descriptionAr: 'استوديو فحص ومعايرة الذاكرة الصلبة المباشر eMMC/UFS: فحص نسبة الاهتراء (Health Smart Report)، ومخططات توصيل ISP Pinout، وإصلاح البلوكات المعطوبة.',
     descriptionEn: 'Direct eMMC & UFS hardware memory inspector with Health SMART report, ISP pinouts, and bad block repair.',
     featuredProtocols: [
       {

@@ -15,7 +15,8 @@ import {
   Smartphone,
   Radio,
   Flame,
-  Cloud
+  Cloud,
+  Monitor
 } from 'lucide-react';
 import { ConnectedDevice } from '../types';
 import { DEVICE_PRESETS } from '../data/devicePresets';
@@ -30,6 +31,7 @@ interface NavbarProps {
   lang: 'en' | 'ar';
   setLang: (lang: 'en' | 'ar') => void;
   onOpenUsbModal: () => void;
+  onOpenWindowsInstaller?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -41,14 +43,15 @@ export const Navbar: React.FC<NavbarProps> = ({
   onEmergencyStop,
   lang,
   setLang,
-  onOpenUsbModal
+  onOpenUsbModal,
+  onOpenWindowsInstaller
 }) => {
   const isAr = lang === 'ar';
 
   const navTabs = [
     { id: 'quantum-bypass', labelEn: 'Quantum Ultra Bypass', labelAr: 'التخطي السريع والفك الفائق', icon: Zap, badge: 'ULTRA 0.4ms' },
     { id: 'cloud-security', labelEn: '0-Day Cloud & Exploit Hub', labelAr: 'سحابة الثغرات والتحديثات 0-Day', icon: Flame, badge: 'LIVE 2026' },
-    { id: 'box-emulation', labelEn: 'Box & Dongle Emulators', labelAr: 'محاكي البوكسات والدونجلات العالمية', icon: Wrench, badge: 'PRO BOXES' },
+    { id: 'box-emulation', labelEn: 'Native Box & Dongle Tools', labelAr: 'أدوات البوكسات والدونجلات المباشرة', icon: Wrench, badge: 'NATIVE BOX' },
     { id: 'fault-repair', labelEn: 'Universal Fault Repair', labelAr: 'مركز إصلاح كافة الأعطال', icon: Wrench, badge: 'PRO' },
     { id: 'device-reader', labelEn: 'Multi-Mode Telemetry', labelAr: 'قارئ الهاتف بكافة الأوضاع', icon: Smartphone },
     { id: 'hardware-workbench', labelEn: 'Hardware & Micro-Soldering', labelAr: 'المخططات والمايكروسولدرينغ', icon: Cpu, badge: 'SCHEMATICS' },
@@ -87,6 +90,18 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Device Switcher & USB Connection Triggers */}
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Windows Desktop App Installer Trigger */}
+          {onOpenWindowsInstaller && (
+            <button
+              onClick={onOpenWindowsInstaller}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 rounded-lg transition-all cursor-pointer"
+              title="Install Desktop App on Windows 10/11"
+            >
+              <Monitor className="w-3.5 h-3.5 text-cyan-400" />
+              <span>{isAr ? 'تثبيت على ويندوز' : 'Windows App'}</span>
+            </button>
+          )}
+
           {/* Direct Live USB Hardware Connect Trigger */}
           <button
             onClick={onOpenUsbModal}

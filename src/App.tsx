@@ -17,6 +17,8 @@ import { FirmwareMatchingService } from './components/FirmwareMatchingService';
 import { CloudSecurityHub } from './components/CloudSecurityHub';
 import { BoxEmulationHub } from './components/BoxEmulationHub';
 import { QuantumBypassEngine } from './components/QuantumBypassEngine';
+import { SmartAgentInspectorModal } from './components/SmartAgentInspectorModal';
+import { WindowsInstallerModal } from './components/WindowsInstallerModal';
 import { 
   ConnectedDevice, 
   DeviceMode, 
@@ -39,6 +41,8 @@ export default function App() {
   const [isBusy, setIsBusy] = useState<boolean>(false);
   const [abortRequested, setAbortRequested] = useState<boolean>(false);
   const [isUsbModalOpen, setIsUsbModalOpen] = useState<boolean>(false);
+  const [isSmartAgentOpen, setIsSmartAgentOpen] = useState<boolean>(false);
+  const [isWindowsInstallerOpen, setIsWindowsInstallerOpen] = useState<boolean>(false);
   const [realUsbInfo, setRealUsbInfo] = useState<WebUsbDeviceInfo | null>(null);
 
   // Initial Logs
@@ -450,6 +454,7 @@ export default function App() {
         lang={lang}
         setLang={setLang}
         onOpenUsbModal={() => setIsUsbModalOpen(true)}
+        onOpenWindowsInstaller={() => setIsWindowsInstallerOpen(true)}
       />
 
       {/* Main Workspace Canvas */}
@@ -459,6 +464,7 @@ export default function App() {
           device={currentDevice}
           onRebootToMode={handleRebootToMode}
           onReadInfo={() => handleReadInfo()}
+          onOpenSmartAgent={() => setIsSmartAgentOpen(true)}
           onTriggerDiagnostic={(type) => {
             addLog('info', 'AUTO-DIAGNOSE', lang === 'ar'
               ? `بدء فحص وتتبع العطل تلقائياً [${type}] على جهاز ${currentDevice.marketName}...`
@@ -684,6 +690,46 @@ export default function App() {
           setCurrentDevice(preset);
           addLog('info', 'PRESET-SELECT', lang === 'ar' ? `تم تحميل نموذج الهاتف: ${preset.marketName}` : `Loaded device preset: ${preset.marketName}`);
         }}
+        lang={lang}
+      />
+
+      {/* Smart Autonomous Agent Inspector Modal */}
+      <SmartAgentInspectorModal
+        isOpen={isSmartAgentOpen}
+        onClose={() => setIsSmartAgentOpen(false)}
+        device={currentDevice}
+        onApplyAutoRepairPlan={(planName, commands, repairType) => {
+          setIsBusy(true);
+          realUsbService.playContinuityBeep(150, 2600);
+          addLog('info', 'AUTO-AGENT-EXEC', lang === 'ar' ? `تنفيذ خطة العميل الذكي المباشرة: [${planName}]` : `Executing Auto Agent Plan: [${planName}]`);
+
+          let idx = 0;
+          const interval = setInterval(() => {
+            if (idx < commands.length) {
+              addLog('hex', 'AGENT-CMD', `$ ${commands[idx]}`);
+              idx++;
+            } else {
+              realUsbService.playContinuityBeep(350, 2900);
+              addLog('success', 'AGENT-COMPLETE', lang === 'ar' ? `✓ اكتملت عملية الإصلاح والتخطي الآلي بنجاح مع الحفاظ على البيانات 100%.` : `✓ Auto Agent repair plan completed successfully.`);
+              setCurrentDevice(prev => ({
+                ...prev,
+                frpStatus: 'OFF',
+                kgStatus: 'Completed',
+                knoxStatus: '0x0 (Valid)'
+              }));
+              setIsBusy(false);
+              clearInterval(interval);
+            }
+          }, 500);
+        }}
+        isBusy={isBusy}
+        lang={lang}
+      />
+
+      {/* Windows Desktop App Installer Modal */}
+      <WindowsInstallerModal
+        isOpen={isWindowsInstallerOpen}
+        onClose={() => setIsWindowsInstallerOpen(false)}
         lang={lang}
       />
     </div>

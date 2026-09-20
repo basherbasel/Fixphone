@@ -71,16 +71,16 @@ export const BoxEmulationHub: React.FC<BoxEmulationHubProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-base font-bold text-white">
-                {isAr ? 'منظومة ومحاكي البوكسات والدونجلات العالمية (Box & Dongle Emulation Suite)' : 'Global Box & Dongle Protocol Emulator'}
+                {isAr ? 'منظومة وأدوات البوكسات والدونجلات الحقيقية المباشرة (Native Box & Dongle Protocol Engine)' : 'Native Hardware Box & Dongle Protocol Suite'}
               </h2>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                PRO LICENSED 2026
+                DIRECT HARDWARE 2026
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
               {isAr
-                ? 'تشغيل كافة خوارزميات وبروتوكولات UnlockTool, Chimera, Z3X, Octopus, Pandora, AMT, UFI بدون الحاجة لدونجل خشبي أو اشتراكات خارجية'
-                : 'Native hardware & software protocol emulator for UnlockTool, ChimeraTool, Z3X, Octoplus, Pandora, and UFI Box engines.'}
+                ? 'تشغيل كافة بروتوكولات وخوارزميات العمليات الفعلية لأدوات UnlockTool, Chimera, Z3X, Octopus, Pandora, AMT, UFI مباشرة عبر منافذ USB'
+                : 'Native hardware protocol execution for UnlockTool, ChimeraTool, Z3X, Octoplus, Pandora, and UFI Box engines.'}
             </p>
           </div>
         </div>

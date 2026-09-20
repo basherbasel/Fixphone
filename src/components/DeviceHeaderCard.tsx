@@ -24,6 +24,7 @@ interface DeviceHeaderCardProps {
   device: ConnectedDevice;
   onRebootToMode: (mode: DeviceMode) => void;
   onReadInfo: () => void;
+  onOpenSmartAgent?: () => void;
   onTriggerDiagnostic?: (type: 'LOGCAT' | 'KERNEL' | 'MEMORY' | 'THERMAL') => void;
   lang: 'en' | 'ar';
 }
@@ -32,6 +33,7 @@ export const DeviceHeaderCard: React.FC<DeviceHeaderCardProps> = ({
   device,
   onRebootToMode,
   onReadInfo,
+  onOpenSmartAgent,
   onTriggerDiagnostic,
   lang
 }) => {
@@ -133,11 +135,22 @@ export const DeviceHeaderCard: React.FC<DeviceHeaderCardProps> = ({
           {/* Read Info Action */}
           <button
             onClick={onReadInfo}
-            className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-md text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-cyan-600/20 transition-colors"
+            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-md text-xs font-semibold flex items-center gap-1.5 border border-slate-700 transition-colors"
           >
             <Terminal className="w-3.5 h-3.5" />
             <span>{isAr ? 'قراءة بيانات الهاتف' : 'Read Info'}</span>
           </button>
+
+          {/* Smart AI Agent Autonomous Inspector Button */}
+          {onOpenSmartAgent && (
+            <button
+              onClick={onOpenSmartAgent}
+              className="px-3 py-1.5 bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white rounded-md text-xs font-bold flex items-center gap-1.5 shadow-md shadow-cyan-600/30 transition-all cursor-pointer"
+            >
+              <Sparkles className="w-3.5 h-3.5 animate-pulse text-cyan-200" />
+              <span>{isAr ? 'العميل الذكي القارئ للتشخيص' : 'AI Agent Auto-Inspect'}</span>
+            </button>
+          )}
         </div>
       </div>
 
