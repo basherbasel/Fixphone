@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
@@ -24,6 +25,35 @@ function getGenAI(): GoogleGenAI | null {
   return genAIClient;
 }
 
+// Multi-model robust fallback executor for extreme reliability
+async function generateAIContent(ai: GoogleGenAI, prompt: string, options: { responseMimeType?: string } = {}) {
+  const models = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash-exp'];
+  let lastError: any = null;
+
+  for (const model of models) {
+    try {
+      const response = await ai.models.generateContent({
+        model,
+        contents: prompt,
+        config: {
+          responseMimeType: options.responseMimeType
+        }
+      });
+      if (response && response.text) {
+        return { text: response.text, modelUsed: model };
+      }
+    } catch (err: any) {
+      console.warn(`[AI Engine] Attempt with ${model} failed, trying next fallback:`, err?.message || err);
+      lastError = err;
+      if (err?.status === 400) {
+        // Validation/Arguments error, do not retry
+        throw err;
+      }
+    }
+  }
+  throw lastError || new Error('All fallback models failed to respond');
+}
+
 // ---------------- API ENDPOINTS ----------------
 
 // Health check
@@ -37,14 +67,15 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// AI Diagnostic Log Analyzer
+// AI Diagnostic Log Analyzer (Multi-language Support)
 app.post('/api/ai/diagnose', async (req, res) => {
-  const { logContent, deviceContext, logType } = req.body;
+  const { logContent, deviceContext, logType, lang } = req.body;
   
   if (!logContent) {
     return res.status(400).json({ error: 'Log content is required' });
   }
 
+  const isArabic = lang === 'ar';
   const ai = getGenAI();
   if (ai) {
     try {
@@ -75,50 +106,38 @@ Return a strictly valid JSON object with the following schema:
   "exactFastbootOrAdbCommands": ["command 1", "command 2"],
   "riskAssessment": "Risk of data loss or bricking",
   "antiBrickSafetyNotes": "Specific safeguard to apply before flashing"
-}`;
+}
+${isArabic ? 'Provide all descriptive and technical text values (summary, rootCause, recommendedSteps, riskAssessment, antiBrickSafetyNotes) in highly professional, fluent Arabic technical terminology for repair technicians.' : 'Provide in clear technical English.'}`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents: prompt,
-        config: {
-          responseMimeType: 'application/json'
-        }
-      });
+      const response = await generateAIContent(ai, prompt, { responseMimeType: 'application/json' });
 
       const parsed = JSON.parse(response.text || '{}');
-      return res.json({ success: true, analysis: parsed, source: 'gemini-ai' });
+      return res.json({ success: true, analysis: parsed, source: `gemini-ai (${response.modelUsed})` });
     } catch (err: any) {
       console.warn('Gemini API diagnosis failed, using offline heuristics:', err?.message);
     }
   }
 
-  // Offline Deep Heuristics Fallback
+  // Offline Deep Heuristics Fallback (Intelligent Multilingual Expert Diagnostics)
   const lowerLog = logContent.toLowerCase();
-  let analysis: any = {
-    summary: 'Hardware & software diagnostics completed using offline heuristic patterns.',
-    rootCause: 'System log inspection revealed anomalous daemon responses.',
-    severity: 'MEDIUM',
-    culpritModule: 'init / system_server',
-    recommendedSteps: [
-      'Read device GPT / partition table via Fastboot/EDL.',
-      'Perform backup of critical partitions (NVRAM / EFS / PERSIST).',
-      'Flash verified stock boot.img and vbmeta with disabled verity.'
-    ],
-    exactFastbootOrAdbCommands: [
-      'fastboot getvar all',
-      'fastboot --disable-verity --disable-verification flash vbmeta vbmeta.img'
-    ],
-    riskAssessment: 'Low to moderate risk if critical NV partitions are backed up first.',
-    antiBrickSafetyNotes: 'Ensure Binary Rollback Protection index matches your ROM version.'
-  };
+  let analysis: any;
 
   if (lowerLog.includes('kernel panic') || lowerLog.includes('kernel bug') || lowerLog.includes('null pointer dereference')) {
     analysis = {
-      summary: 'Kernel Panic detected: Low-level driver crash or memory corruption causing bootloop.',
-      rootCause: 'Linux kernel encountered an unhandled trap or null pointer dereference in hardware driver module.',
+      summary: isArabic 
+        ? 'تم كشف ذعر النواة (Kernel Panic): انهيار في برامج التشغيل منخفضة المستوى أو تلف بالذاكرة يسبب إعادة التشغيل اللانهائي.' 
+        : 'Kernel Panic detected: Low-level driver crash or memory corruption causing bootloop.',
+      rootCause: isArabic
+        ? 'واجهت نواة نظام لينكس (Linux Kernel) فخاً غير معالج أو تراجعاً بمؤشر فارغ (Null Pointer) في ملف تعريف قطع الهاردوير.'
+        : 'Linux kernel encountered an unhandled trap or null pointer dereference in hardware driver module.',
+      issueType: 'Hardware Failure',
       severity: 'CRITICAL',
-      culpritModule: 'Kernel Driver (Boot.img / Vendor.img)',
-      recommendedSteps: [
+      culpritModule: isArabic ? 'برمجيات النواة وتعاريف البوردة (boot.img / vendor.img)' : 'Kernel Driver (Boot.img / Vendor.img)',
+      recommendedSteps: isArabic ? [
+        'أعد تفليش ملفات boot.img و dtbo.img الرسمية المطابقة تماماً للإصدار الحالي للجهاز.',
+        'قم بتهيئة مسارات الذاكرة المؤقتة ومسارات الميتاداتا /cache و /metadata.',
+        'إذا استمر ذعر النواة، قم بفحص صحة ومستوى تآكل الذاكرة العشوائية والفلاش UFS/eMMC في وضع EDL 9008.'
+      ] : [
         'Re-flash stock boot.img and dtbo.img matching current build.',
         'Wipe /cache and /metadata partition.',
         'If panic persists, check UFS/eMMC storage wear health in EDL/BROM mode.'
@@ -128,16 +147,29 @@ Return a strictly valid JSON object with the following schema:
         'fastboot flash dtbo dtbo.img',
         'fastboot erase cache'
       ],
-      riskAssessment: 'High risk of continuous bootloop until clean kernel is flashed.',
-      antiBrickSafetyNotes: 'Do not lock bootloader before verifying successful system boot.'
+      riskAssessment: isArabic 
+        ? 'مستوى خطورة مرتفع جداً بالتعليق المستمر على الشعار حتى يتم تفليش كيرنل سليم ومتوافق.'
+        : 'High risk of continuous bootloop until clean kernel is flashed.',
+      antiBrickSafetyNotes: isArabic
+        ? 'تنبيه هام: لا تقم بإغلاق البوتلودر أبداً قبل التأكد من إقلاع الهاتف بنجاح ووصوله للواجهة الرئيسية.'
+        : 'Do not lock bootloader before verifying successful system boot.'
     };
   } else if (lowerLog.includes('dm-verity') || lowerLog.includes('avb 2.0') || lowerLog.includes('verification failed')) {
     analysis = {
-      summary: 'Android Verified Boot (AVB) / dm-verity signature verification failure.',
-      rootCause: 'System partition hash does not match vbmeta signature tree. Device is in Red / Orange state.',
+      summary: isArabic
+        ? 'فشل التحقق من توقيع حماية الإقلاع الآمن (Android Verified Boot - AVB 2.0 / dm-verity).'
+        : 'Android Verified Boot (AVB) / dm-verity signature verification failure.',
+      rootCause: isArabic
+        ? 'لا يتطابق تشفير قسم النظام (System Partition Hash) مع مصفوفة توقيع vbmeta. الهاتف يدخل في وضع الحماية الأحمر / البرتقالي.'
+        : 'System partition hash does not match vbmeta signature tree. Device is in Red / Orange state.',
+      issueType: 'Firmware Incompatibility',
       severity: 'HIGH',
-      culpritModule: 'vbmeta.img & super partition',
-      recommendedSteps: [
+      culpritModule: isArabic ? 'قسم الحماية وتشفير النظام (vbmeta.img & super)' : 'vbmeta.img & super partition',
+      recommendedSteps: isArabic ? [
+        'قم بتفليش ملف vbmeta.img الرسمي مع إضافة أوامر إلغاء التشفير والتحقق للحماية.',
+        'تحقق من سلامة التوقيع الرياضي لقسم الـ super.img المدمج.',
+        'في حال ترويت الجهاز، تأكد من تفليش ملف init_boot أو boot المعدل عبر برنامج Magisk بشكل صحيح.'
+      ] : [
         'Flash stock vbmeta.img with verification flags or patched vbmeta.',
         'Verify super.img cryptographic digest.',
         'If rooted, flash Magisk patched init_boot or boot.img.'
@@ -146,16 +178,29 @@ Return a strictly valid JSON object with the following schema:
         'fastboot --disable-verity --disable-verification flash vbmeta vbmeta.img',
         'fastboot reboot'
       ],
-      riskAssessment: 'Safe fix when using matched vbmeta binary.',
-      antiBrickSafetyNotes: 'Check rollback index counter in fastboot getvar rollback_index.'
+      riskAssessment: isArabic
+        ? 'آمن ومضمون بشرط تفليش ملفات vbmeta أصلية متوافقة مع إصدار حماية المعالج.'
+        : 'Safe fix when using matched vbmeta binary.',
+      antiBrickSafetyNotes: isArabic
+        ? 'تأكد من قيمة مؤشر تراجع الحماية عبر كتابة الأمر: fastboot getvar rollback_index لتفادي غلق المعالج.'
+        : 'Check rollback index counter in fastboot getvar rollback_index.'
     };
   } else if (lowerLog.includes('baseband') || lowerLog.includes('null imei') || lowerLog.includes('qmi_err') || lowerLog.includes('rild')) {
     analysis = {
-      summary: 'Modem Subsystem & Baseband Failure: RIL daemon cannot communicate with modem DSP.',
-      rootCause: 'Corrupted EFS / NVRAM calibration tables or mismatched modem.bin / NON-HLOS firmware.',
+      summary: isArabic
+        ? 'فشل في مودم الاتصال ونطاق البيس باند: تعذر اتصال ديمون RIL مع معالج الإشارة المودم DSP.'
+        : 'Modem Subsystem & Baseband Failure: RIL daemon cannot communicate with modem DSP.',
+      rootCause: isArabic
+        ? 'تلف أو مسح ملفات قطاع المعايرة والشبكة EFS / NVRAM أو عدم تطابق ملف مودم الشبكة modem.bin مع السوفت وير.'
+        : 'Corrupted EFS / NVRAM calibration tables or mismatched modem.bin / NON-HLOS firmware.',
+      issueType: 'Hardware Failure',
       severity: 'HIGH',
-      culpritModule: 'EFS / QCN / NVRAM modem partitions',
-      recommendedSteps: [
+      culpritModule: isArabic ? 'ملفات قطاع الشبكة والمعايرة (EFS / QCN / NVRAM)' : 'EFS / QCN / NVRAM modem partitions',
+      recommendedSteps: isArabic ? [
+        'قم بقراءة ملفات الشبكة الحالية أو سحب نسخة كاملة لأقسام EFS1 & EFS2 في وضع كوالكوم EDL 9008.',
+        'استعد ملف QCN مصنعي ومسجل بنفس ترددات ومعرفات معالج وبوردة الجهاز.',
+        'قم بتفليش ملف المودم الرسمي المحدث CP أو NON-HLOS.bin لتحديث تعاريف الشبكة.'
+      ] : [
         'Read NVRAM/NVDATA or dump Qualcomm EFS1 & EFS2 in EDL 9008 mode.',
         'Restore calibrated QCN file matching device SoC/Board ID.',
         'Flash official CP / NON-HLOS.bin binary.'
@@ -164,8 +209,43 @@ Return a strictly valid JSON object with the following schema:
         'adb shell setprop sys.usb.config diag,serial_cport,rmnet,adb',
         'fastboot flash modem NON-HLOS.bin'
       ],
-      riskAssessment: 'SIM & cellular connectivity unavailable until NVRAM/EFS rebuilt.',
-      antiBrickSafetyNotes: 'Always keep raw dump of /dev/block/bootdevice/by-name/modemst1 and modemst2.'
+      riskAssessment: isArabic
+        ? 'سيفقد الجهاز قدرة الاتصال بالشبكة وقراءة بطاقة SIM تماماً حتى يتم إصلاح وإعادة بناء قطاع الـ EFS.'
+        : 'SIM & cellular connectivity unavailable until NVRAM/EFS rebuilt.',
+      antiBrickSafetyNotes: isArabic
+        ? 'تحذير أمني: احتفظ بنسخة احتياطية للقطاعات modemst1 و modemst2 قبل تعديل أي بارتيشن.'
+        : 'Always keep raw dump of /dev/block/bootdevice/by-name/modemst1 and modemst2.'
+    };
+  } else {
+    analysis = {
+      summary: isArabic
+        ? 'اكتملت الفحوصات التشخيصية للهاردوير والسوفت وير باستخدام خوارزميات الذكاء الاصطناعي الأوفلاين.'
+        : 'Hardware & software diagnostics completed using offline heuristic patterns.',
+      rootCause: isArabic
+        ? 'أظهر فحص ومطابقة السجلات استجابات عادية وغير طبيعية من منشئ مهام نظام الأندرويد.'
+        : 'System log inspection revealed anomalous daemon responses.',
+      issueType: 'Software Glitch',
+      severity: 'MEDIUM',
+      culpritModule: 'init / system_server',
+      recommendedSteps: isArabic ? [
+        'اقرأ جدول تقسيم الذاكرة GPT الخاص بالهاتف للتأكد من سلامة التقسيم عبر Fastboot/EDL.',
+        'قم بعمل نسخة احتياطية للأقسام الحساسة بالجهاز مثل (NVRAM / EFS / PERSIST).',
+        'قم بتفليش ملفات boot.img الأصلية وتجاوز تشفير حماية الـ vbmeta.'
+      ] : [
+        'Read device GPT / partition table via Fastboot/EDL.',
+        'Perform backup of critical partitions (NVRAM / EFS / PERSIST).',
+        'Flash verified stock boot.img and vbmeta with disabled verity.'
+      ],
+      exactFastbootOrAdbCommands: [
+        'fastboot getvar all',
+        'fastboot --disable-verity --disable-verification flash vbmeta vbmeta.img'
+      ],
+      riskAssessment: isArabic
+        ? 'مستوى خطورة منخفض إلى متوسط، ينصح بعمل نسخة احتياطية لملفات الشبكة للوقاية.'
+        : 'Low to moderate risk if critical NV partitions are backed up first.',
+      antiBrickSafetyNotes: isArabic
+        ? 'تأكد دائماً من مطابقة مستويات إصدار البوتلودر قبل تفليش الفيرموير.'
+        : 'Ensure Binary Rollback Protection index matches your ROM version.'
     };
   }
 
@@ -199,13 +279,7 @@ Return strictly the translated XML within a JSON response formatted as:
   "totalStringsCount": 15
 }`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents: prompt,
-        config: {
-          responseMimeType: 'application/json'
-        }
-      });
+      const response = await generateAIContent(ai, prompt, { responseMimeType: 'application/json' });
 
       const parsed = JSON.parse(response.text || '{}');
       return res.json({ success: true, result: parsed });
@@ -284,48 +358,130 @@ Technician Field Inquiry:
 
 Domain: ${domainType || 'General / Auto-Detect'}`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents: [
-          { role: 'user', parts: [{ text: `${systemInstruction}\n\n${userPrompt}` }] }
-        ],
-        config: {
-          responseMimeType: 'application/json'
-        }
-      });
+      const prompt = `${systemInstruction}\n\n${userPrompt}`;
+      const response = await generateAIContent(ai, prompt, { responseMimeType: 'application/json' });
 
       const parsed = JSON.parse(response.text || '{}');
-      return res.json({ success: true, result: parsed, source: 'gemini-masterfix' });
+      return res.json({ success: true, result: parsed, source: `gemini-masterfix (${response.modelUsed})` });
     } catch (e: any) {
       console.warn('MasterFix AI copilot call failed, using heuristic engine:', e?.message);
     }
   }
 
-  // Offline Fallback for MasterFix Copilot
+  // Offline Fallback for MasterFix Copilot (Intelligent Expert Diagnostic Heuristic matching system)
   const qLower = query.toLowerCase();
-  let result = {
-    problemDiagnosis: isArabic 
-      ? '🔍 تشخيص العطل والسبب الجذري: بناءً على المدخلات، العطل يرجح أن يكون في دائرة الشحن وتوزيع الطاقة الأولية (OVP / Charging PMIC).'
-      : '🔍 Problem Diagnosis & Root Cause: High probability of fault in charging & primary power path (OVP switch or Switching Charger IC).',
-    requiredTools: isArabic
-      ? '🛠️ الأدوات والقياسات المطلوبة: ملتيميتر على وضع الدايود (المجس الأحمر على GND)، باور سبلاي تيار مستمر 4.2V مع كابل مخصص، وفلاكس Amtech NC-559.'
-      : '🛠️ Required Tools & Measurements: Digital Multimeter in Diode mode (Red probe on Ground), DC Power Supply with boot cables, Rosin smoke flux.',
-    actionPlan: isArabic ? [
-      'فحص ممانعة خط VBUS_5V عند مكثف الدخل (القراءة الطبيعية 0.520V-0.580V).',
-      'فحص خط البطارية VBAT وخط VDD_MAIN للتأكد من خلوهما من الشورت المباشر.',
-      'في حال وجود سحب 0.00A، قم بفحص موسفت الحماية OVP والتأكد من إخراج 5V إلى آيسي الشحن.'
-    ] : [
-      'Measure Diode mode on VBUS_5V input rail (Expected: 0.520V - 0.580V).',
-      'Verify VBAT and VDD_MAIN rails for low-ohmic shorts to ground.',
-      'If 0.00A draw, bypass or replace the OVP protection switch IC.'
-    ],
-    safetyWarnings: isArabic
-      ? '⚠️ تحذيرات السلامة والوقاية: لا تقم بحقن أكثر من 1.5V على المسارات الفرعية لتجنب تلف شرائح المعالج، وتأكد من عزل الكاميرات والذاكرة بشريط كابتون عازل.'
-      : '⚠️ Safety & Prevention Warnings: Never inject more than 1.5V on low-voltage secondary rails to protect CPU silicon. Mask cameras with Kapton tape.',
-    category: 'HARDWARE',
-    affectedChips: ['OVP Switch', 'PMIC', 'Type-C Port'],
-    suggestedCommands: []
-  };
+  const isScrenQuery = qLower.includes('screen') || qLower.includes('display') || qLower.includes('lcd') || qLower.includes('amoled') || qLower.includes('backlight') || qLower.includes('شاشة') || qLower.includes('شاشه') || qLower.includes('اضاءة') || qLower.includes('إضاءة') || qLower.includes('بيانات');
+  const isNetworkQuery = qLower.includes('network') || qLower.includes('baseband') || qLower.includes('imei') || qLower.includes('sim') || qLower.includes('wtr') || qLower.includes('sdr') || qLower.includes('emergency') || qLower.includes('شبكة') || qLower.includes('شبكه') || qLower.includes('شريحة') || qLower.includes('شريحه') || qLower.includes('طوارئ') || qLower.includes('اتصال');
+  const isSoftwareQuery = qLower.includes('bootloop') || qLower.includes('logo') || qLower.includes('dm-verity') || qLower.includes('red state') || qLower.includes('odin') || qLower.includes('fastboot') || qLower.includes('flash') || qLower.includes('معلق') || qLower.includes('تفليش') || qLower.includes('سوفت') || qLower.includes('حماية') || qLower.includes('شعار');
+
+  let result;
+
+  if (isScrenQuery) {
+    result = {
+      problemDiagnosis: isArabic 
+        ? '🔍 تشخيص العطل والسبب الجذري: تشير الكلمات المفتاحية إلى خلل في مسارات الإضاءة والبيانات. الاحتمال الأكبر هو فقدان تغذية خطوط شاشة الـ OLED الثنائية (ELVDD +4.6V / ELVSS -4.4V) أو تضرر ملفات الـ Boost بآيسي تغذية الشاشة (Display PMIC TPS65633) أو تلف جزئي بمسارات الفلتر MIPI DSI.'
+        : '🔍 Problem Diagnosis & Root Cause: Display failure is linked to the loss of dual OLED power rails (ELVDD +4.6V / ELVSS -4.4V), damage to the Display PMIC (e.g. TPS65633), or physical fracture in the high-speed MIPI DSI filter lines.',
+      requiredTools: isArabic
+        ? '🛠️ الأدوات والقياسات المطلوبة: ملتيميتر رقمي مفرغ على وضع الدايود لقياس ممانعات كونكتر الشاشة FPC (الممانعة الطبيعية لخطوط MIPI هي 0.380V متطابقة)، وملف تسخين بوردة لفصل الشاشة بأمان.'
+        : '🛠️ Required Tools & Measurements: Digital Multimeter in Diode mode to measure the display FPC connector (Expected: ~0.380V matched pairs on MIPI lines with Red probe on GND), and hot air station for Display PMIC reflow.',
+      actionPlan: isArabic ? [
+        'افحص كونكتر الشاشة FPC تحت الميكروسكوب للتأكد من سلامة الأسنان وخلوها من التآكل أو الرطوبة.',
+        'قس ممانعة الدايود على أزواج خطوط MIPI للتأكد من عدم وجود قطع (Open Line OL) في الفلاتر التناظرية المزدوجة.',
+        'قم بقياس جهود التغذية الحية ELVDD (+4.6V) و ELVSS (-4.4V) عند مكثفات الخرج بعد تركيب شاشة سليمة وتشغيل الهاتف.',
+        'في حال غياب الجهد، قم بفحص ملف الإضاءة ومكثفات الدخل، ثم استبدل آيسي تغذية الشاشة (TPS65633 / SM3010) بحرارة 345°C وهواء هادئ 30%.'
+      ] : [
+        'Inspect display FPC connector under microscope for bent, cracked, or corroded pins.',
+        'Measure Diode mode on MIPI DSI filter pairs to ensure matched ~0.380V readings without open lines (OL).',
+        'Probe display power rails ELVDD (+4.6V) and ELVSS (-4.4V) near output capacitors during active screen state.',
+        'If voltages are missing, check display PMIC input capacitors and inductors, then replace Display Boost PMIC (TPS65633 / SM3010) at 345°C.'
+      ],
+      safetyWarnings: isArabic
+        ? '⚠️ تحذيرات السلامة والوقاية: قم بتفريغ شحنات مكثفات الإضاءة الكبيرة قبل فك أو تركيب فلاتة الشاشة لتفادي حدوث تفريغ كهربائي ESD يتلف المعالج أو المعالج المساعد للشاشة.'
+        : '⚠️ Safety & Prevention Warnings: Always discharge the large display filter capacitors before connecting or disconnecting the display FPC to prevent ESD from blowing the CPU display registers.',
+      category: 'HARDWARE',
+      affectedChips: ['Display PMIC (TPS65633 / SM3010)', 'MIPI DSI Filters', 'OLED Screen Connector'],
+      suggestedCommands: []
+    };
+  } else if (isNetworkQuery) {
+    result = {
+      problemDiagnosis: isArabic
+        ? '🔍 تشخيص العطل والسبب الجذري: مؤشرات فقدان الشبكة ترجح وجود خلل في خطوط تغذية آيسي الإرسال والاستقبال (RF Transceiver SDR865 / WTR5975) أو وجود تآكل في هوائيات الـ RF أو تلف منطقي في ملفات الـ EFS/NVRAM الحيوية مما يؤدي لفقدان السيريال (Null IMEI).'
+        : '🔍 Problem Diagnosis & Root Cause: Network failure or "Emergency Calls Only" is likely caused by missing LDO power supplies (1.0V / 1.8V) to the RF Transceiver (e.g. SDR865 / WTR5975), damaged RF antennas, or partition corruption in the EFS/NVRAM storage sector.',
+      requiredTools: isArabic
+        ? '🛠️ الأدوات والقياسات المطلوبة: ملتيميتر رقمي دقيق لقياس فولتيات الـ LDO (1.0V, 1.8V)، كود فحص الشبكة الداخلي، وأداة تفعيل Diag Port لكتابة ملفات المعايرة.'
+        : '🛠️ Required Tools & Measurements: Digital Multimeter for active voltage probing, RF schematics for checking LDO rails, and a service box software to enable USB Diagnostic Port.',
+      actionPlan: isArabic ? [
+        'اطلب الكود *#06# للتأكد من سلامة السيريال (IMEI) وجودة قراءة إصدار النطاق الأساسي (Baseband Version) في الإعدادات.',
+        'قس جهود التغذية الحية VDD_RF_1.0V و VDD_RF_1.8V عند المكثفات المجاورة لآيسي الإرسال SDR/WTR عند وضع بطاقة SIM.',
+        'في حال غياب الجهود، تتبع مسارات التغذية من آيسي الباور الرئيسي (PMIC)، وفي حال وجود الفولتات وغياب الشبكة قم بتغيير آيسي الشبكة SDR865 بحرارة 350°C وهواء 35%.',
+        'إذا كانت المشكلة سوفت وير (سيريال مفقود أو معيب)، قم بتفعيل وضع الدياج عبر الكود وكتابة ملف QCN أصلي لإعادة بناء السيريال.'
+      ] : [
+        'Dial *#06# to check IMEI integrity and verify Baseband Version inside System Settings.',
+        'Probe VDD_RF_1.0V and VDD_RF_1.8V LDO voltages on capacitors adjacent to the RF transceiver while a SIM card is inserted.',
+        'If power rails are missing, trace from main PMIC. If voltages are present, replace the RF Transceiver (SDR865/WTR5975) at 350°C and 35% airflow.',
+        'If logical error (Null IMEI), enable USB Diagnostic Mode via commands, and write a calibrated manufacturer QCN file to rebuild calibration tables.'
+      ],
+      safetyWarnings: isArabic
+        ? '⚠️ تحذيرات السلامة والوقاية: احرص دائماً على أخذ نسخة احتياطية كاملة لملفات الشبكة والحماية (EFS / NVRAM / NVDATA Dump) قبل كتابة أي ملف سوفت وير لمنع الفقدان النهائي لهوية الشبكة الفريدة.'
+        : '⚠️ Safety & Prevention Warnings: Always keep a secure backup of the original EFS/NVRAM partition blocks before flashing or writing QCN files to protect unique hardware factory calibrations.',
+      category: 'NETWORK',
+      affectedChips: ['RF Transceiver (SDR865 / WTR5975)', 'EFS / NVRAM / NVDATA', 'Antenna Feed Network'],
+      suggestedCommands: ['adb shell setprop sys.usb.config diag,serial_cport,rmnet,adb']
+    };
+  } else if (isSoftwareQuery) {
+    result = {
+      problemDiagnosis: isArabic
+        ? '🔍 تشخيص العطل والسبب الجذري: مشكلة التعليق على الشعار (Bootloop) ترتبط بفشل عملية التحقق من تكامل النظام (AVB 2.0 / dm-verity) نتيجة تلف في قسم البوت أو النظام، أو تجاوز حماية مستوى حماية المعالج من التراجع (Anti-Rollback).'
+        : '🔍 Problem Diagnosis & Root Cause: Bootloop or boot stuck on logo is linked to a cryptographic integrity failure in Android Verified Boot (AVB 2.0 / dm-verity), corrupted boot/vbmeta partitions, or a protection lockout by Anti-Rollback (ARB).',
+      requiredTools: isArabic
+        ? '🛠️ الأدوات والقياسات المطلوبة: جهاز كمبيوتر مزود بأدوات السيرفر الرسمية (Odin / Mi Flash)، تعريفات ADB & Fastboot سليمة، وفيرموير رسمي كامل (Repair Firmware).'
+        : '🛠️ Required Tools & Measurements: Computer with ADB & Fastboot CLI tools, official brand flash tool (Odin / Mi Flash), and a complete multi-file repair stock firmware package.',
+      actionPlan: isArabic ? [
+        'أدخل الهاتف في وضع الداونلود أو الفاست بوت وافحص مؤشرات الأمان الحالية (FRP, OEM Lock, ARB Rollback Index).',
+        'حمل سوفت وير رسمي كامل ومطابق لنسخة الحماية الحالية بدقة (لا تقم بالتفليش بإصدار قديم لتجنب تفعيل حماية كسر الـ ARB).',
+        'قم بتفليش ملف vbmeta.img الأصلي مع إلغاء تشفير نظام التحقق بالأمر المباشر: fastboot --disable-verity --disable-verification flash vbmeta vbmeta.img.',
+        'في حال استمرار التعليق، قم بعمل فورمات كامل لمسار اليوزر داتا عبر: fastboot format userdata لإعادة بناء قطاعات تشفير الداتا.'
+      ] : [
+        'Reboot device into Download or Fastboot mode to check active lock states (FRP, OEM Lock, ARB Rollback Index).',
+        'Download complete stock firmware matching or higher than current security level. Do not downgrade bootloader versions.',
+        'Flash stock vbmeta.img with verification bypassed: fastboot --disable-verity --disable-verification flash vbmeta vbmeta.img.',
+        'If bootloop persists, clean metadata and format encryption headers via: fastboot format userdata.'
+      ],
+      safetyWarnings: isArabic
+        ? '⚠️ تحذيرات السلامة والوقاية: لا تقم أبداً بإغلاق البوتلودر (fastboot oem lock) أثناء عمل الهاتف بنظام معدل أو ملفات حماية ملغاة لمنع دخول الهاتف في حالة الموت الكامل والدائم (Hard Brick).'
+        : '⚠️ Safety & Prevention Warnings: NEVER lock the bootloader (fastboot oem lock) while running custom, modified, or root-patched system binaries, as it triggers a permanent firmware hardware brick.',
+      category: 'SOFTWARE',
+      affectedChips: ['vbmeta.img Partition', 'boot.img / init_boot', 'UFS Userdata Block'],
+      suggestedCommands: ['fastboot --disable-verity --disable-verification flash vbmeta vbmeta.img', 'fastboot format userdata']
+    };
+  } else {
+    // Default Charging & Power / Dead Phone Fallback
+    result = {
+      problemDiagnosis: isArabic 
+        ? '🔍 تشخيص العطل والسبب الجذري: بناءً على الفحص، العطل يرجح أن يكون في مسار خط VBUS_5V_IN، منظم جهد الشحن OVP (مثل U4001/ET9530L) أو آيسي الشحن والتحكم الرئيسي في توزيع الطاقة (Switching Charger IC MAX77705 / S2MU106).'
+        : '🔍 Problem Diagnosis & Root Cause: High probability of fault in the primary charging path (VBUS_5V_IN rail), the OVP (Over-Voltage Protection) switch IC, or the switching charger controller (e.g., MAX77705 / BQ25890).',
+      requiredTools: isArabic
+        ? '🛠️ الأدوات والقياسات المطلوبة: ملتيميتر رقمي على وضع الدايود (المجس الأحمر على GND) لقياس ممانعة خط VBUS (القيمة السليمة 0.520V-0.580V)، وباور سبلاي تيار مستمر 4.2V مع كابل مخصص لحقن التيار وكشف الشورت.'
+        : '🛠️ Required Tools & Measurements: Digital Multimeter in Diode mode (Red probe on Ground) to measure VBUS input impedance (Expected: 0.520V - 0.580V), and regulated DC Power Supply with boot cables for thermal analysis.',
+      actionPlan: isArabic ? [
+        'افحص منفذ الشحن Type-C واللحامات تحت الميكروسكوب للتأكد من خلو منفذ الشحن من الأوساخ أو أرجل لحام مكسورة.',
+        'قس ممانعة الدايود على مكثف الدخل C4012 للتأكد من خلو مسار الـ VBUS من الشورت المباشر بالأرضي.',
+        'في حال وجود شورت صريح، قم بتبخير صمغ الراتنج (Rosin Smoke) وحقن تيار 1.8V بحد أقصى 2A لمراقبة أي جزء ينصهر أولاً (آيسي OVP أو مكثفات التصفية).',
+        'في حال كانت القراءات سليمة وغياب سحب الشحن، قم بتسخين آيسي الشحن الرئيسي MAX77705 عند حرارة 355°C وهواء 30% لخلخلته وإعادة لحامه، أو استبدله بآخر جديد.'
+      ] : [
+        'Inspect the Type-C port under magnification to ensure contact springs and trace solders are healthy and free of oxidation.',
+        'Probe Diode mode on VBUS capacitor C4012 to confirm there is no short-to-ground on the primary VBUS line.',
+        'If a dead short is present, apply Rosin Smoke to the charging region, inject a low voltage of 1.8V (Max) at 2A, and watch for immediate thermal melting.',
+        'If diode readings are healthy but charging fails, reflow the Main Charger IC (MAX77705 / BQ25890) at 355°C with 30% airflow, or replace it.'
+      ],
+      safetyWarnings: isArabic
+        ? '⚠️ تحذيرات السلامة والوقاية: تجنب حقن فولت شاحن مباشر 5V على مسارات بوردة الهاتف الداخلية غير المحمية حتى لا تتسبب في تلف شرائح السيليكون الحساسة للمعالج.'
+        : '⚠️ Safety & Prevention Warnings: Avoid injecting high voltages (like raw 5V charger power) directly onto motherboard secondary lines, as it can instantly bypass regulators and destroy the main processor.',
+      category: 'HARDWARE',
+      affectedChips: ['OVP Protection Switch (ET9530L)', 'Main Charger IC (MAX77705)', 'Type-C Sub-board Connector'],
+      suggestedCommands: []
+    };
+  }
 
   return res.json({ success: true, result, source: 'offline-masterfix' });
 });
@@ -582,6 +738,49 @@ app.post('/api/anti-brick/verify', (req, res) => {
       ? 'SHA-256 package checksum invalid or corrupted.'
       : 'All safety gates verified. Safe to proceed.'
   });
+});
+
+// Live Server Devices Catalog Route
+app.get('/api/devices', (req, res) => {
+  try {
+    const catalogPath = path.join(process.cwd(), 'mobile_devices.json');
+    if (!fs.existsSync(catalogPath)) {
+      return res.status(404).json({ success: false, error: 'Catalog file not found' });
+    }
+    const data = fs.readFileSync(catalogPath, 'utf8');
+    const parsed = JSON.parse(data);
+    
+    const { brand, search } = req.query;
+    let manufacturers = parsed.manufacturers || [];
+
+    if (brand && brand !== 'ALL') {
+      manufacturers = manufacturers.filter((m: any) => m.brand.toLowerCase() === (brand as string).toLowerCase());
+    }
+
+    if (search) {
+      const q = (search as string).toLowerCase().trim();
+      manufacturers = manufacturers.map((m: any) => {
+        const filteredSeries = m.series.map((s: any) => {
+          const filteredModels = s.models.filter((model: any) => {
+            return model.model_name.toLowerCase().includes(q) ||
+                   model.model_number.toLowerCase().includes(q) ||
+                   model.chipset.toLowerCase().includes(q) ||
+                   model.chipset_vendor.toLowerCase().includes(q);
+          });
+          return { ...s, models: filteredModels };
+        }).filter((s: any) => s.models.length > 0);
+        return { ...m, series: filteredSeries };
+      }).filter((m: any) => m.series.length > 0);
+    }
+
+    return res.json({
+      success: true,
+      database_info: parsed.database_info,
+      manufacturers
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // ---------------- VITE & STATIC SERVING ----------------

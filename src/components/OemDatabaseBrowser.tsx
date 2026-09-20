@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Database, 
   Search, 
@@ -13,7 +13,10 @@ import {
   Zap, 
   CheckCircle2, 
   Sparkles,
-  Download
+  Download,
+  Server,
+  CloudLightning,
+  Activity
 } from 'lucide-react';
 import { OEM_DEVICE_DATABASE } from '../data/oemDeviceDatabase';
 import { OemDeviceRecord } from '../types';
@@ -33,8 +36,48 @@ export const OemDatabaseBrowser: React.FC<OemDatabaseBrowserProps> = ({
   const [copiedJson, setCopiedJson] = useState<boolean>(false);
   const [copiedItemCode, setCopiedItemCode] = useState<string | null>(null);
 
-  const brands = ['ALL', 'Samsung', 'Xiaomi', 'POCO', 'Oppo', 'Realme', 'Vivo', 'iQOO', 'Infinix', 'Tecno', 'Huawei', 'Honor', 'Motorola', 'Nokia', 'Apple', 'Google'];
+  // New Live Database States
+  const [viewSource, setViewSource] = useState<'live' | 'static'>('live');
+  const [liveManufacturers, setLiveManufacturers] = useState<any[]>([]);
+  const [dbInfo, setDbInfo] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const brands = ['ALL', 'Samsung', 'Xiaomi', 'POCO', 'Oppo', 'Realme', 'Vivo', 'Huawei', 'OnePlus', 'Google', 'Motorola', 'Apple'];
+
+  // Fetch Live SQLite / JSON Catalog from Express server
+  useEffect(() => {
+    if (viewSource !== 'live') return;
+    setIsLoading(true);
+    setErrorMessage(null);
+
+    const delayDebounce = setTimeout(() => {
+      fetch(`/api/devices?brand=${selectedBrand}&search=${encodeURIComponent(searchQuery)}`)
+        .then((res) => {
+          if (!res.ok) throw new Error('Failed to fetch live database');
+          return res.json();
+        })
+        .then((resData) => {
+          if (resData.success) {
+            setLiveManufacturers(resData.manufacturers || []);
+            setDbInfo(resData.database_info);
+          } else {
+            throw new Error(resData.error || 'Server returned error');
+          }
+        })
+        .catch((err) => {
+          console.error('Error fetching live devices:', err);
+          setErrorMessage(err.message || 'Error loading live catalog');
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    }, 300);
+
+    return () => clearTimeout(delayDebounce);
+  }, [viewSource, selectedBrand, searchQuery]);
+
+  // Static Fallback Filtering
   const filteredRecords = OEM_DEVICE_DATABASE.filter((rec) => {
     const matchesBrand = selectedBrand === 'ALL' || rec.brand.toLowerCase() === selectedBrand.toLowerCase();
     const q = searchQuery.toLowerCase().trim();
@@ -48,7 +91,8 @@ export const OemDatabaseBrowser: React.FC<OemDatabaseBrowserProps> = ({
   });
 
   const handleCopyFullJson = () => {
-    navigator.clipboard.writeText(JSON.stringify(filteredRecords, null, 2));
+    const targetData = viewSource === 'live' ? liveManufacturers : filteredRecords;
+    navigator.clipboard.writeText(JSON.stringify(targetData, null, 2));
     setCopiedJson(true);
     setTimeout(() => setCopiedJson(false), 2000);
   };
@@ -57,6 +101,24 @@ export const OemDatabaseBrowser: React.FC<OemDatabaseBrowserProps> = ({
     navigator.clipboard.writeText(JSON.stringify(rec, null, 2));
     setCopiedItemCode(rec.model);
     setTimeout(() => setCopiedItemCode(null), 1500);
+  };
+
+  const handleSelectDevice = (brand: string, modelName: string, modelNumber: string, chipset: string) => {
+    if (onSelectModelToTarget) {
+      const record: OemDeviceRecord = {
+        brand,
+        model: modelName,
+        code_name: modelNumber,
+        chipset,
+        supported_operations: [
+          "FRP Bypass",
+          "Factory Reset",
+          "Flash Official ROM",
+          "Bootloader Lock Status"
+        ]
+      };
+      onSelectModelToTarget(record);
+    }
   };
 
   return (
@@ -70,28 +132,64 @@ export const OemDatabaseBrowser: React.FC<OemDatabaseBrowserProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-                {isAr ? 'قاعدة بيانات الموديلات والمعالجات الشاملة (2018 - 2026 OEM Database)' : '2018-2026 Master OEM Device & Chipset Database'}
+                {isAr ? 'قاعدة بيانات الهواتف والمعالجات لـ Apex' : 'Apex Master OEM & Chipset Database'}
               </h3>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                {OEM_DEVICE_DATABASE.length} RECORDS
+                {viewSource === 'live' ? 'LIVE DATABASE' : `${OEM_DEVICE_DATABASE.length} RECORDS`}
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
-              {isAr
-                ? 'قائمة مفصلة وشاملة لموديلات سامسونج، شاومي، أوبو، فيفو، إنفينيكس، هواوي، نوكيا بترميز JSON نظيف للربط المباشر'
-                : 'Exhaustive JSON device registry covering Samsung, Xiaomi, Oppo, Vivo, Transsion, Huawei, Nokia, Apple & Pixel.'}
+            <p className="text-xs text-slate-400 mt-0.5 font-sans">
+              {viewSource === 'live' && dbInfo
+                ? `${dbInfo.description} (v${dbInfo.version})`
+                : (isAr 
+                    ? 'قائمة شاملة لموديلات سامسونج، شاومي، أوبو، فيفو، هواوي، آبل للتحميل والتفليش المباشر'
+                    : 'Comprehensive device registry for Samsung, Xiaomi, Oppo, Vivo, Apple, Google & Motorola.')}
             </p>
           </div>
         </div>
 
-        {/* Copy All Filtered JSON Button */}
-        <button
-          onClick={handleCopyFullJson}
-          className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/20 transition-all cursor-pointer"
-        >
-          {copiedJson ? <Check className="w-4 h-4 text-emerald-300" /> : <Copy className="w-4 h-4" />}
-          <span>{copiedJson ? (isAr ? 'تم نسخ JSON بنجاح!' : 'Copied JSON!') : (isAr ? 'نسخ كود JSON بالكامل' : 'Copy Full JSON')}</span>
-        </button>
+        {/* Action Controls */}
+        <div className="flex items-center gap-2">
+          {/* View Source Switcher */}
+          <div className="bg-slate-900/90 p-1 rounded-xl border border-slate-800 flex items-center gap-1">
+            <button
+              onClick={() => {
+                setViewSource('live');
+                setSearchQuery('');
+              }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                viewSource === 'live'
+                  ? 'bg-indigo-600 text-white shadow'
+                  : 'text-slate-400 hover:text-slate-300'
+              }`}
+            >
+              <Server className="w-3.5 h-3.5" />
+              <span>{isAr ? 'قاعدة البيانات الحية' : 'Live Database'}</span>
+            </button>
+            <button
+              onClick={() => {
+                setViewSource('static');
+                setSearchQuery('');
+              }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                viewSource === 'static'
+                  ? 'bg-indigo-600 text-white shadow'
+                  : 'text-slate-400 hover:text-slate-300'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>{isAr ? 'السجل المدمج' : 'Built-in Registry'}</span>
+            </button>
+          </div>
+
+          <button
+            onClick={handleCopyFullJson}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 font-bold text-xs transition-all cursor-pointer"
+          >
+            {copiedJson ? <Check className="w-4 h-4 text-emerald-300" /> : <Copy className="w-4 h-4" />}
+            <span>{copiedJson ? (isAr ? 'تم نسخ JSON!' : 'Copied!') : (isAr ? 'نسخ JSON' : 'Copy JSON')}</span>
+          </button>
+        </div>
       </div>
 
       {/* Brand Tabs bar */}
@@ -118,65 +216,155 @@ export const OemDatabaseBrowser: React.FC<OemDatabaseBrowserProps> = ({
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder={isAr ? 'ابحث باسم الموديل أو المعالج أو العمليات (مثلاً: S24 Ultra, Dimensity 7200, BROM)...' : 'Search model, code name, chipset or operation...'}
+          placeholder={
+            viewSource === 'live'
+              ? (isAr ? 'البحث الحي في السيرفر وقاعدة البيانات المحلية (مثلاً: S24 Ultra, A18 Pro)...' : 'Search live local database (e.g., S24, Kirin)...')
+              : (isAr ? 'ابحث باسم الموديل أو المعالج أو العمليات في السجل المدمج...' : 'Search built-in registry...')
+          }
           className="w-full pl-9 rtl:pl-3 rtl:pr-9 pr-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono"
         />
       </div>
 
-      {/* Grid List of Device JSON Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[500px] overflow-y-auto pr-1">
-        {filteredRecords.map((rec, idx) => (
-          <div
-            key={idx}
-            className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-indigo-500/50 transition-all space-y-2.5 flex flex-col justify-between"
-          >
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                  {rec.brand}
-                </span>
-                <span className="text-[10px] font-mono text-cyan-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
-                  {rec.code_name}
-                </span>
-              </div>
+      {/* Database Display View */}
+      {viewSource === 'live' ? (
+        <div className="space-y-4">
+          {isLoading && (
+            <div className="p-12 text-center flex flex-col items-center justify-center space-y-2">
+              <Activity className="w-8 h-8 text-indigo-400 animate-spin" />
+              <span className="text-xs text-slate-400 font-mono">
+                {isAr ? 'جاري الاستعلام وقراءة البيانات من السيرفر...' : 'Fetching live results from local SQLite/JSON...'}
+              </span>
+            </div>
+          )}
 
-              <h4 className="text-xs font-bold text-white">{rec.model}</h4>
+          {errorMessage && (
+            <div className="p-4 bg-red-950/20 border border-red-900/50 rounded-xl text-center text-xs text-red-400 font-mono">
+              ⚠️ {errorMessage}
+            </div>
+          )}
 
-              <div className="flex items-center gap-1.5 text-[11px] font-mono text-slate-400 bg-slate-950 p-2 rounded-lg border border-slate-800">
-                <Cpu className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                <span className="truncate">{rec.chipset}</span>
-              </div>
+          {!isLoading && !errorMessage && liveManufacturers.length === 0 && (
+            <div className="p-12 text-center text-xs text-slate-500 font-mono">
+              {isAr ? 'لا توجد نتائج مطابقة في قاعدة البيانات الحية.' : 'No matching models found in live database.'}
+            </div>
+          )}
 
-              {/* Supported Operations list */}
-              <div className="space-y-1">
-                <span className="text-[9px] font-mono text-slate-500 uppercase block">
-                  {isAr ? 'العمليات المدعومة:' : 'Supported Operations:'}
-                </span>
-                <div className="flex flex-wrap gap-1">
-                  {rec.supported_operations.map((op, i) => (
-                    <span key={i} className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-slate-800 text-emerald-300 border border-slate-700">
-                      {op}
-                    </span>
-                  ))}
+          {!isLoading && !errorMessage && liveManufacturers.length > 0 && (
+            <div className="space-y-6 max-h-[500px] overflow-y-auto pr-1">
+              {liveManufacturers.map((m: any) => (
+                <div key={m.brand} className="space-y-3 bg-slate-900/40 p-4 rounded-xl border border-slate-800/60">
+                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-xs font-bold text-indigo-400 font-mono uppercase">{m.brand}</h4>
+                      <span className="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded">
+                        {m.country}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-slate-500">LIVE SYNCED</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {m.series.map((s: any) => (
+                      <div key={s.name} className="bg-slate-950/80 p-3 rounded-lg border border-slate-900 space-y-2 flex flex-col justify-between">
+                        <div className="space-y-2">
+                          <span className="text-[10px] font-bold text-slate-400 block border-b border-slate-900 pb-1 font-mono">
+                            📂 {s.name}
+                          </span>
+                          <div className="space-y-2">
+                            {s.models.map((model: any) => (
+                              <div key={model.model_number} className="bg-slate-900/70 p-2.5 rounded border border-slate-800 space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[11px] font-bold text-white font-sans">{model.model_name}</span>
+                                  <span className="text-[9px] font-mono text-cyan-400 bg-slate-950 px-1 rounded">
+                                    {model.model_number}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1 text-[10px] text-slate-400 font-mono">
+                                  <Cpu className="w-3 h-3 text-amber-500 shrink-0" />
+                                  <span className="truncate">{model.chipset_vendor} {model.chipset}</span>
+                                </div>
+
+                                <button
+                                  onClick={() => handleSelectDevice(m.brand, model.model_name, model.model_number, `${model.chipset_vendor} ${model.chipset}`)}
+                                  className="w-full mt-2 py-1 px-2 rounded bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-500/30 text-[10px] font-bold text-indigo-300 hover:text-white transition-all flex items-center justify-center gap-1 cursor-pointer"
+                                >
+                                  <Smartphone className="w-3 h-3" />
+                                  <span>{isAr ? 'تعيين كجهاز مستهدف' : 'Load Target Device'}</span>
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Grid List of Device JSON Cards (Static Built-in Mode) */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[500px] overflow-y-auto pr-1">
+          {filteredRecords.map((rec, idx) => (
+            <div
+              key={idx}
+              className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-indigo-500/50 transition-all space-y-2.5 flex flex-col justify-between animate-fade-in"
+            >
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                    {rec.brand}
+                  </span>
+                  <span className="text-[10px] font-mono text-cyan-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                    {rec.code_name}
+                  </span>
+                </div>
+
+                <h4 className="text-xs font-bold text-white">{rec.model}</h4>
+
+                <div className="flex items-center gap-1.5 text-[11px] font-mono text-slate-400 bg-slate-950 p-2 rounded-lg border border-slate-800">
+                  <Cpu className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span className="truncate">{rec.chipset}</span>
+                </div>
+
+                {/* Supported Operations list */}
+                <div className="space-y-1">
+                  <span className="text-[9px] font-mono text-slate-500 uppercase block">
+                    {isAr ? 'العمليات المدعومة:' : 'Supported Operations:'}
+                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    {rec.supported_operations.map((op, i) => (
+                      <span key={i} className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-slate-800 text-emerald-300 border border-slate-700">
+                        {op}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Action Bar */}
-            <div className="pt-2 border-t border-slate-800 flex items-center justify-between gap-2">
-              <button
-                onClick={() => handleCopySingleJson(rec)}
-                className="flex items-center gap-1 px-2.5 py-1 rounded bg-slate-950 hover:bg-slate-800 text-[10px] font-mono text-indigo-300 border border-slate-800 cursor-pointer"
-              >
-                {copiedItemCode === rec.model ? <Check className="w-3 h-3 text-emerald-400" /> : <Code className="w-3 h-3" />}
-                <span>{copiedItemCode === rec.model ? 'Copied JSON' : 'JSON'}</span>
-              </button>
+              {/* Action Bar */}
+              <div className="pt-2 border-t border-slate-800 flex items-center justify-between gap-2">
+                <button
+                  onClick={() => handleCopySingleJson(rec)}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded bg-slate-950 hover:bg-slate-800 text-[10px] font-mono text-indigo-300 border border-slate-800 cursor-pointer"
+                >
+                  {copiedItemCode === rec.model ? <Check className="w-3 h-3 text-emerald-400" /> : <Code className="w-3 h-3" />}
+                  <span>{copiedItemCode === rec.model ? 'Copied JSON' : 'JSON'}</span>
+                </button>
 
-              <span className="text-[9px] font-mono text-slate-500">2018-2026 READY</span>
+                <button
+                  onClick={() => handleSelectDevice(rec.brand, rec.model, rec.code_name, rec.chipset)}
+                  className="flex items-center gap-1 px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-[10px] font-bold text-white cursor-pointer"
+                >
+                  <Smartphone className="w-3 h-3" />
+                  <span>{isAr ? 'تعيين كنشط' : 'Select'}</span>
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

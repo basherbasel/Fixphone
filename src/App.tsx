@@ -26,6 +26,7 @@ import { OemDatabaseBrowser } from './components/OemDatabaseBrowser';
 import { SmartUsbOneClickStudio } from './components/SmartUsbOneClickStudio';
 import { DeadBootRecoveryStudio } from './components/DeadBootRecoveryStudio';
 import { UfsMemoryProgrammerStudio } from './components/UfsMemoryProgrammerStudio';
+import { QuickWizardGuide } from './components/QuickWizardGuide';
 import { 
   ConnectedDevice, 
   DeviceMode, 
@@ -484,6 +485,13 @@ export default function App() {
           lang={lang}
         />
 
+        {/* Dynamic Interactive Quick Solution Wizard */}
+        <QuickWizardGuide
+          lang={lang}
+          setActiveTab={setActiveTab}
+          onAddLog={addLog}
+        />
+
         {/* Tab Modules */}
         <div className="transition-all duration-200">
           {activeTab === 'smart-1click' && (
@@ -504,7 +512,45 @@ export default function App() {
           )}
 
           {activeTab === 'oem-database' && (
-            <OemDatabaseBrowser lang={lang} />
+            <OemDatabaseBrowser
+              lang={lang}
+              onSelectModelToTarget={(record) => {
+                // Map OemDeviceRecord to Device preset
+                const targetPreset = {
+                  id: record.code_name.toLowerCase(),
+                  brand: record.brand,
+                  model: record.code_name,
+                  marketName: record.model,
+                  chipset: 'qualcomm' as const,
+                  chipsetName: record.chipset,
+                  socId: '0x0000000000008650',
+                  mode: 'ADB_ONLINE' as const,
+                  port: 'COM3 (Apex High Speed Protocol)',
+                  vidPid: '05C6:9008',
+                  serialNumber: `APX${Math.floor(100000 + Math.random() * 900000)}`,
+                  imei1: `${Math.floor(350000000000000 + Math.random() * 99999999)}`,
+                  imei2: `${Math.floor(350000000000000 + Math.random() * 99999999)}`,
+                  basebandVersion: 'CP_ONLINE',
+                  androidVersion: '14 (API 34)',
+                  securityPatch: '2026-06-01',
+                  buildNumber: 'UP1A.231005.007.S928BXXU1AXB5',
+                  bootloaderStatus: 'LOCKED' as const,
+                  frpStatus: 'ON' as const,
+                  knoxStatus: '0x1 (Tripped)' as const,
+                  storageType: 'UFS 4.0' as const,
+                  storageSizeGb: 512,
+                  batteryLevel: 85,
+                  rollbackIndex: 4,
+                  cscCode: 'MID (Middle East)',
+                  kgStatus: 'Locked' as const
+                };
+                setCurrentDevice(targetPreset);
+                addLog('success', 'DEVICE-SELECT', lang === 'ar'
+                  ? `✓ تم تعيين الهاتف المستهدف بنجاح: ${record.brand} ${record.model} [${record.code_name}]`
+                  : `✓ Active target device successfully changed to: ${record.brand} ${record.model} [${record.code_name}]`);
+                realUsbService.playContinuityBeep(180, 2600);
+              }}
+            />
           )}
 
           {activeTab === 'quantum-bypass' && (

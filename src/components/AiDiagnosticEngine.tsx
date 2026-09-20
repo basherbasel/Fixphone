@@ -214,7 +214,8 @@ export const AiDiagnosticEngine: React.FC<AiDiagnosticEngineProps> = ({
         body: JSON.stringify({
           logContent: logText,
           deviceContext: device,
-          logType: 'Kernel Panic / Logcat'
+          logType: 'Kernel Panic / Logcat',
+          lang
         })
       });
 

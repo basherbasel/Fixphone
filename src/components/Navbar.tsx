@@ -53,29 +53,63 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenCommandPalette
 }) => {
   const isAr = lang === 'ar';
+  const [selectedCategory, setSelectedCategory] = React.useState<string>('smart');
 
   const navTabs = [
-    { id: 'smart-1click', labelEn: 'Smart 1-Click Studio', labelAr: 'الاستوديو الذكي للضغط الواحدة', icon: Sparkles, badge: 'AUTO 2026' },
-    { id: 'dead-boot', labelEn: 'Dead Boot Recovery', labelAr: 'إحياء الهواتف الميتة', icon: RotateCcw, badge: 'UNBRICK' },
-    { id: 'quantum-bypass', labelEn: 'Quantum Ultra Bypass', labelAr: 'التخطي السريع والفك الفائق', icon: Zap, badge: 'ULTRA 0.4ms' },
-    { id: 'oem-database', labelEn: '2018-2026 OEM Database', labelAr: 'قاعدة الموديلات الشاملة JSON', icon: Database, badge: 'OEM JSON' },
-    { id: 'cloud-security', labelEn: '0-Day Cloud & Exploit Hub', labelAr: 'سحابة الثغرات والتحديثات 0-Day', icon: Flame, badge: 'LIVE 2026' },
-    { id: 'box-emulation', labelEn: 'Native Box & Dongle Tools', labelAr: 'أدوات البوكسات والدونجلات المباشرة', icon: Wrench, badge: 'NATIVE BOX' },
-    { id: 'fault-repair', labelEn: 'Universal Fault Repair', labelAr: 'مركز إصلاح كافة الأعطال', icon: Wrench, badge: 'PRO' },
-    { id: 'device-reader', labelEn: 'Multi-Mode Telemetry', labelAr: 'قارئ الهاتف بكافة الأوضاع', icon: Smartphone },
-    { id: 'hardware-workbench', labelEn: 'Hardware & Micro-Soldering', labelAr: 'المخططات والمايكروسولدرينغ', icon: Cpu, badge: 'SCHEMATICS' },
-    { id: 'ufs-memory', labelEn: 'UFS & eMMC Programmer', labelAr: 'برمجية ذاكرات UFS/eMMC', icon: HardDrive, badge: 'UFS 4.0' },
-    { id: 'ai-oscilloscope', labelEn: 'AI Oscilloscope 60FPS', labelAr: 'راسم الإشارات والأوسيلوسكوب', icon: Activity, badge: '2.5 GSa/s' },
-    { id: 'thermal-rosin', labelEn: 'Thermal & Rosin Short', labelAr: 'الكاميرا الحرارية وفاحص الشورت', icon: Flame, badge: 'DC INJECT' },
-    { id: 'firmware-matching', labelEn: 'Verified Stock ROMs', labelAr: 'الفلاشات الرسمية المعتمدة', icon: ShieldAlert, badge: 'SHA-256' },
-    { id: 'flasher', labelEn: 'Multi-ROM Flasher', labelAr: 'تفليش الأنظمة والرومات', icon: Zap },
-    { id: 'frp', labelEn: 'FRP & Account Bypass', labelAr: 'تخطي الحسابات و FRP', icon: ShieldAlert },
-    { id: 'ai-diagnostics', labelEn: 'AI Diagnostics & Panic', labelAr: 'التشخيص الذكي واللوج', icon: Sparkles },
-    { id: 'network', labelEn: 'NVRAM & IMEI Repair', labelAr: 'إصلاح الشبكة والسيريال', icon: Activity },
-    { id: 'localization', labelEn: 'Language & CSC Switch', labelAr: 'التعريب وتغيير CSC', icon: Globe },
-    { id: 'safety', labelEn: 'Anti-Brick & Backups', labelAr: 'الحماية والنسخ الاحتياطي', icon: ShieldAlert },
-    { id: 'codelab', labelEn: 'Native Protocol Code Lab', labelAr: 'أكواد ومكتبات البروتوكول', icon: Terminal },
+    { id: 'smart-1click', category: 'smart', labelEn: 'Smart 1-Click Studio', labelAr: 'الاستوديو الذكي للضغط الواحدة', icon: Sparkles, badge: 'AUTO 2026' },
+    { id: 'dead-boot', category: 'smart', labelEn: 'Dead Boot Recovery', labelAr: 'إحياء الهواتف الميتة', icon: RotateCcw, badge: 'UNBRICK' },
+    { id: 'quantum-bypass', category: 'smart', labelEn: 'Quantum Ultra Bypass', labelAr: 'التخطي السريع والفك الفائق', icon: Zap, badge: 'ULTRA 0.4ms' },
+    { id: 'frp', category: 'smart', labelEn: 'FRP & Account Bypass', labelAr: 'تخطي الحسابات و FRP', icon: ShieldAlert },
+
+    { id: 'ai-diagnostics', category: 'diagnostics', labelEn: 'AI Diagnostics & Panic', labelAr: 'التشخيص الذكي واللوج', icon: Sparkles },
+    { id: 'fault-repair', category: 'diagnostics', labelEn: 'Universal Fault Repair', labelAr: 'مركز إصلاح كافة الأعطال', icon: Wrench, badge: 'PRO' },
+    { id: 'ai-oscilloscope', category: 'diagnostics', labelEn: 'AI Oscilloscope 60FPS', labelAr: 'راسم الإشارات والأوسيلوسكوب', icon: Activity, badge: '2.5 GSa/s' },
+    { id: 'thermal-rosin', category: 'diagnostics', labelEn: 'Thermal & Rosin Short', labelAr: 'الكاميرا الحرارية وفاحص الشورت', icon: Flame, badge: 'DC INJECT' },
+
+    { id: 'flasher', category: 'advanced', labelEn: 'Multi-ROM Flasher', labelAr: 'تفليش الأنظمة والرومات', icon: Zap },
+    { id: 'network', category: 'advanced', labelEn: 'NVRAM & IMEI Repair', labelAr: 'إصلاح الشبكة والسيريال', icon: Activity },
+    { id: 'ufs-memory', category: 'advanced', labelEn: 'UFS & eMMC Programmer', labelAr: 'برمجية ذاكرات UFS/eMMC', icon: HardDrive, badge: 'UFS 4.0' },
+    { id: 'localization', category: 'advanced', labelEn: 'Language & CSC Switch', labelAr: 'التعريب وتغيير CSC', icon: Globe },
+    { id: 'safety', category: 'advanced', labelEn: 'Anti-Brick & Backups', labelAr: 'الحماية والنسخ الاحتياطي', icon: ShieldAlert },
+    { id: 'device-reader', category: 'advanced', labelEn: 'Multi-Mode Telemetry', labelAr: 'قارئ الهاتف بكافة الأوضاع', icon: Smartphone },
+
+    { id: 'oem-database', category: 'database', labelEn: '2018-2026 OEM Database', labelAr: 'قاعدة الموديلات الشاملة JSON', icon: Database, badge: 'OEM JSON' },
+    { id: 'hardware-workbench', category: 'database', labelEn: 'Hardware & Micro-Soldering', labelAr: 'المخططات والمايكروسولدرينغ', icon: Cpu, badge: 'SCHEMATICS' },
+    { id: 'cloud-security', category: 'database', labelEn: '0-Day Cloud & Exploit Hub', labelAr: 'سحابة الثغرات والتحديثات 0-Day', icon: Flame, badge: 'LIVE 2026' },
+    { id: 'firmware-matching', category: 'database', labelEn: 'Verified Stock ROMs', labelAr: 'الفلاشات الرسمية المعتمدة', icon: ShieldAlert, badge: 'SHA-256' },
+    { id: 'box-emulation', category: 'database', labelEn: 'Native Box & Dongle Tools', labelAr: 'أدوات البوكسات والدونجلات المباشرة', icon: Wrench, badge: 'NATIVE BOX' },
+    { id: 'codelab', category: 'database', labelEn: 'Native Protocol Code Lab', labelAr: 'أكواد ومكتبات البروتوكول', icon: Terminal },
   ];
+
+  const categories = [
+    { id: 'all', labelEn: 'All Tools', labelAr: 'كل الأدوات', icon: Smartphone, color: 'text-slate-400' },
+    { id: 'smart', labelEn: '1-Click & Bypass', labelAr: 'نقرة واحدة وتخطي', icon: Sparkles, color: 'text-cyan-400' },
+    { id: 'diagnostics', labelEn: 'AI & Diagnostics', labelAr: 'التشخيص الذكي', icon: Activity, color: 'text-emerald-400' },
+    { id: 'advanced', labelEn: 'Programming & Network', labelAr: 'البرمجة والشبكات', icon: Cpu, color: 'text-blue-400' },
+    { id: 'database', labelEn: 'Schematics & Cloud', labelAr: 'المخططات وقواعد البيانات', icon: Database, color: 'text-indigo-400' },
+  ];
+
+  // Auto sync category when activeTab is changed from other component click events
+  React.useEffect(() => {
+    const activeTabObj = navTabs.find(t => t.id === activeTab);
+    if (activeTabObj) {
+      setSelectedCategory(activeTabObj.category);
+    }
+  }, [activeTab]);
+
+  const handleCategorySelect = (categoryId: string) => {
+    setSelectedCategory(categoryId);
+    if (categoryId !== 'all') {
+      const firstTabOfCategory = navTabs.find(tab => tab.category === categoryId);
+      if (firstTabOfCategory) {
+        setActiveTab(firstTabOfCategory.id);
+      }
+    }
+  };
+
+  const filteredTabs = selectedCategory === 'all' 
+    ? navTabs 
+    : navTabs.filter(tab => tab.category === selectedCategory);
 
   return (
     <header className="bg-slate-900 border-b border-slate-800 text-slate-100 sticky top-0 z-40">
@@ -189,9 +223,37 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
 
+      {/* Tool Categories Selection Bar */}
+      <div className="bg-slate-900/95 px-4 py-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 border-b border-slate-800/60 overflow-x-auto scrollbar-none">
+        <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider shrink-0 font-mono">
+          <Wrench className="w-3.5 h-3.5 text-cyan-500" />
+          <span>{isAr ? 'أقسام النظام الأساسية' : 'Core Categories'}</span>
+        </div>
+        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none w-full sm:w-auto">
+          {categories.map((cat) => {
+            const CatIcon = cat.icon;
+            const isSelected = selectedCategory === cat.id;
+            return (
+              <button
+                key={cat.id}
+                onClick={() => handleCategorySelect(cat.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all cursor-pointer whitespace-nowrap ${
+                  isSelected 
+                    ? 'bg-slate-850 text-white border-cyan-500/50 shadow-md shadow-cyan-950/10'
+                    : 'bg-slate-950/40 text-slate-400 hover:text-slate-200 border-slate-800/80 hover:bg-slate-900'
+                }`}
+              >
+                <CatIcon className={`w-3.5 h-3.5 ${isSelected ? cat.color : 'text-slate-500'}`} />
+                <span>{isAr ? cat.labelAr : cat.labelEn}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Navigation Tabs Bar */}
       <nav className="px-4 flex items-center gap-1 overflow-x-auto scrollbar-thin scrollbar-thumb-slate-700 py-1 bg-slate-950/60">
-        {navTabs.map((tab) => {
+        {filteredTabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
           return (
