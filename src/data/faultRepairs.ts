@@ -1,6 +1,7 @@
 import { FaultRepairItem } from '../types';
 
 export const FAULT_REPAIRS: FaultRepairItem[] = [
+  // 1. BOOT & STARTUP ENGINES
   {
     id: 'bootloop-fix',
     titleAr: 'إصلاح إعادة التشغيل المتكرر والتعليق على الشعار (Bootloop Fix)',
@@ -162,6 +163,48 @@ export const FAULT_REPAIRS: FaultRepairItem[] = [
     ]
   },
   {
+    id: 'fastboot-recovery-loop',
+    titleAr: 'إصلاح تعليق الهاتف في الفاست بوت أو الريكفري (Fastboot & Recovery Loop)',
+    titleEn: 'Fastboot Loop & Stuck in Recovery Repair',
+    category: 'BOOT',
+    severity: 'MEDIUM',
+    descriptionAr: 'حل مشكلة إقلاع الهاتف تلقائياً إلى شاشة Fastboot أو Android Recovery بسبب تعليق علم boot-once أو تلف misc partition.',
+    descriptionEn: 'Fixes automatic boot to bootloader caused by corrupted misc/BCB partition flags or inactive A/B slot.',
+    icon: 'RefreshCw',
+    supportedModes: ['FASTBOOT', 'ADB_ONLINE', 'EDL_9008'],
+    supportedChipsets: ['qualcomm', 'mediatek', 'samsung_exynos', 'unisoc_spd', 'generic_adb'],
+    riskAr: 'آمن وفوري (يستغرق 10 ثوانٍ)',
+    riskEn: 'Instant & Safe - executes in under 10 seconds',
+    protocolPipeline: [
+      {
+        stepNumber: 1,
+        actionAr: 'فحص سجلات الإقلاع Boot Control Block (BCB) في بارتشن misc',
+        actionEn: 'Inspect bootloader control block flags and command parameter in misc',
+        commandPreview: 'fastboot getvar current-slot && fastboot getvar slot-successful:a'
+      },
+      {
+        stepNumber: 2,
+        actionAr: 'مسح أوامر الريكفري العالقة من بارتشن misc',
+        actionEn: 'Zero-out lingering boot-recovery commands in misc partition',
+        commandPreview: 'fastboot erase misc'
+      },
+      {
+        stepNumber: 3,
+        actionAr: 'التبديل إلى السلوت النشط السليم (Active Slot Switching A/B)',
+        actionEn: 'Switch to healthy boot slot and mark slot as bootable',
+        commandPreview: 'fastboot --set-active=a'
+      },
+      {
+        stepNumber: 4,
+        actionAr: 'إعادة تشغيل الهاتف والإقلاع الطبيعي لنظام أندرويد',
+        actionEn: 'Reboot directly to main system OS',
+        commandPreview: 'fastboot reboot'
+      }
+    ]
+  },
+
+  // 2. NETWORK & BASEBAND & IMEI ENGINES
+  {
     id: 'baseband-imei-fix',
     titleAr: 'إصلاح فقدان الشبكة والسيريال (Unknown Baseband / Null IMEI / No Service)',
     titleEn: 'Unknown Baseband & Null IMEI Radio Recovery',
@@ -201,6 +244,48 @@ export const FAULT_REPAIRS: FaultRepairItem[] = [
       }
     ]
   },
+  {
+    id: 'wifi-bluetooth-crash-fix',
+    titleAr: 'إصلاح توقف الواي فاي والبلوتوث (Wi-Fi / BT NV Data Corrupted & MAC Zero)',
+    titleEn: 'Wi-Fi & Bluetooth MAC Address & Calibration Repair',
+    category: 'NETWORK',
+    severity: 'MEDIUM',
+    descriptionAr: 'إصلاح مشكلة عدم تشغيل مفتاح Wi-Fi، وظهور MAC Address: 02:00:00:00:00:00، أو إعادة تشغيل الهاتف عند فتح البلوتوث.',
+    descriptionEn: 'Restores factory Wi-Fi/BT MAC NV items and recalibrates RF FEM (Front-End Module) frequency tables in persist/nvram.',
+    icon: 'Radio',
+    supportedModes: ['ADB_ONLINE', 'EDL_9008', 'MTK_BROM', 'FASTBOOT'],
+    supportedChipsets: ['qualcomm', 'mediatek', 'samsung_exynos', 'unisoc_spd'],
+    riskAr: 'آمن تماماً',
+    riskEn: 'Safe - resets NV configuration keys',
+    protocolPipeline: [
+      {
+        stepNumber: 1,
+        actionAr: 'قراءة عناوين MAC الحالية من بارتشن persist / nvdata',
+        actionEn: 'Read WLAN/BT calibration offsets in persist/wlan_mac.bin',
+        commandPreview: 'adb shell getprop ro.boot.wifimac'
+      },
+      {
+        stepNumber: 2,
+        actionAr: 'توليد وتعيين عنوان MAC أصلي فريد متوافق مع معايير IEEE OUI',
+        actionEn: 'Synthesize genuine IEEE MAC address and generate wlan_mac.bin',
+        protocolCode: 'WLAN_MAC: 48:2C:67:89:AB:CD | BT_MAC: 48:2C:67:89:AB:CE'
+      },
+      {
+        stepNumber: 3,
+        actionAr: 'حقن ملف المعايرة وضبط الصلاحيات 0644 في بارتشن persist',
+        actionEn: 'Flash calibrated persist and apply strict SELinux file contexts',
+        commandPreview: 'fastboot flash persist persist_clean.img'
+      },
+      {
+        stepNumber: 4,
+        actionAr: 'إعادة تشغيل الهاتف وتفعيل راديو الواي فاي فائق السرعة Wi-Fi 6/7',
+        actionEn: 'Restart wireless subsystem and verify Wi-Fi link speed',
+        commandPreview: 'fastboot reboot'
+      }
+    ]
+  },
+
+  // 3. SECURITY & LOCKS
   {
     id: 'screen-lock-no-data-loss',
     titleAr: 'إزالة قفل الشاشة بدون حذف البيانات (Screen Lock Bypass Without Data Loss)',
@@ -242,45 +327,47 @@ export const FAULT_REPAIRS: FaultRepairItem[] = [
     ]
   },
   {
-    id: 'fastboot-recovery-loop',
-    titleAr: 'إصلاح تعليق الهاتف في الفاست بوت أو الريكفري (Fastboot & Recovery Loop)',
-    titleEn: 'Fastboot Loop & Stuck in Recovery Repair',
-    category: 'BOOT',
-    severity: 'MEDIUM',
-    descriptionAr: 'حل مشكلة إقلاع الهاتف تلقائياً إلى شاشة Fastboot أو Android Recovery بسبب تعليق علم boot-once أو تلف misc partition.',
-    descriptionEn: 'Fixes automatic boot to bootloader caused by corrupted misc/BCB partition flags or inactive A/B slot.',
-    icon: 'RefreshCw',
-    supportedModes: ['FASTBOOT', 'ADB_ONLINE', 'EDL_9008'],
-    supportedChipsets: ['qualcomm', 'mediatek', 'samsung_exynos', 'unisoc_spd', 'generic_adb'],
-    riskAr: 'آمن وفوري (يستغرق 10 ثوانٍ)',
-    riskEn: 'Instant & Safe - executes in under 10 seconds',
+    id: 'knox-kg-prenormal-unlock',
+    titleAr: 'إلغاء قفل الحماية المقيدة (Knox Guard & KG Prenormal & MDM Unlock)',
+    titleEn: 'Knox Guard, KG Locked & Enterprise MDM Unlock',
+    category: 'SECURITY',
+    severity: 'HIGH',
+    descriptionAr: 'فك قيود حماية سامسونج KG Locked / Prenormal وإزالة إشعار الإدارة المدارية (MDM / Knox Cloud Services).',
+    descriptionEn: 'Removes Knox Guard lock, KG status Prenormal/Locked, and enterprise corporate enrollment restrictions.',
+    icon: 'Lock',
+    supportedModes: ['SAMSUNG_DOWNLOAD', 'EDL_9008', 'ADB_ONLINE'],
+    supportedChipsets: ['samsung_exynos', 'qualcomm', 'mediatek'],
+    riskAr: 'آمن - بدون التأثير على سريال الهاتف',
+    riskEn: 'Safe - permanent Knox profile unlink',
     protocolPipeline: [
       {
         stepNumber: 1,
-        actionAr: 'فحص سجلات الإقلاع Boot Control Block (BCB) في بارتشن misc',
-        actionEn: 'Inspect bootloader control block flags and command parameter in misc',
-        commandPreview: 'fastboot getvar current-slot && fastboot getvar slot-successful:a'
+        actionAr: 'قراءة حالة KG State و Knox Warranty Bit من ذاكرة الـ RPMB',
+        actionEn: 'Read KG Status register from RPMB secure partition',
+        commandPreview: 'Loke Protocol: Read KG Status -> [KG: PRENORMAL / LOCKED]'
       },
       {
         stepNumber: 2,
-        actionAr: 'مسح أوامر الريكفري العالقة من بارتشن misc',
-        actionEn: 'Zero-out lingering boot-recovery commands in misc partition',
-        commandPreview: 'fastboot erase misc'
+        actionAr: 'تصفير عداد وتطبيق بروتوكول إلغاء الارتباط بخوادم Knox Guard',
+        actionEn: 'Inject KG state patch to reset state to [KG: COMPLETED]',
+        protocolCode: 'ODIN Loke Frame: Write PARAM / PERSISTENT KG Unlink Key'
       },
       {
         stepNumber: 3,
-        actionAr: 'التبديل إلى السلوت النشط السليم (Active Slot Switching A/B)',
-        actionEn: 'Switch to healthy boot slot and mark slot as bootable',
-        commandPreview: 'fastboot --set-active=a'
+        actionAr: 'تعطيل خدمات MDM والتحكم الإداري عن بُعد (Remote Device Manager)',
+        actionEn: 'Disable enterprise device policy controller packages',
+        commandPreview: 'pm disable-user --user 0 com.samsung.android.knox.kpu'
       },
       {
         stepNumber: 4,
-        actionAr: 'إعادة تشغيل الهاتف والإقلاع الطبيعي لنظام أندرويد',
-        actionEn: 'Reboot directly to main system OS',
+        actionAr: 'إعادة التشغيل وفتح كافة صلاحيات الهاتف وتفليش الرومات المعدلة',
+        actionEn: 'Reboot device with all bootloader & flashing restrictions lifted',
         commandPreview: 'fastboot reboot'
       }
     ]
   },
+
+  // 4. HARDWARE & MEMORY & SENSORS
   {
     id: 'touch-sensor-fix',
     titleAr: 'إصلاح توقف اللمس والحساسات والكاميرا بعد التحديث (Touch & Sensor Fix)',
@@ -362,46 +449,6 @@ export const FAULT_REPAIRS: FaultRepairItem[] = [
     ]
   },
   {
-    id: 'knox-kg-prenormal-unlock',
-    titleAr: 'إلغاء قفل الحماية المقيدة (Knox Guard & KG Prenormal & MDM Unlock)',
-    titleEn: 'Knox Guard, KG Locked & Enterprise MDM Unlock',
-    category: 'SECURITY',
-    severity: 'HIGH',
-    descriptionAr: 'فك قيود حماية سامسونج KG Locked / Prenormal وإزالة إشعار الإدارة المدارية (MDM / Knox Cloud Services).',
-    descriptionEn: 'Removes Knox Guard lock, KG status Prenormal/Locked, and enterprise corporate enrollment restrictions.',
-    icon: 'Lock',
-    supportedModes: ['SAMSUNG_DOWNLOAD', 'EDL_9008', 'ADB_ONLINE'],
-    supportedChipsets: ['samsung_exynos', 'qualcomm', 'mediatek'],
-    riskAr: 'آمن - بدون التأثير على سريال الهاتف',
-    riskEn: 'Safe - permanent Knox profile unlink',
-    protocolPipeline: [
-      {
-        stepNumber: 1,
-        actionAr: 'قراءة حالة KG State و Knox Warranty Bit من ذاكرة الـ RPMB',
-        actionEn: 'Read KG Status register from RPMB secure partition',
-        commandPreview: 'Loke Protocol: Read KG Status -> [KG: PRENORMAL / LOCKED]'
-      },
-      {
-        stepNumber: 2,
-        actionAr: 'تصفير عداد وتطبيق بروتوكول إلغاء الارتباط بخوادم Knox Guard',
-        actionEn: 'Inject KG state patch to reset state to [KG: COMPLETED]',
-        protocolCode: 'ODIN Loke Frame: Write PARAM / PERSISTENT KG Unlink Key'
-      },
-      {
-        stepNumber: 3,
-        actionAr: 'تعطيل خدمات MDM والتحكم الإداري عن بُعد (Remote Device Manager)',
-        actionEn: 'Disable enterprise device policy controller packages',
-        commandPreview: 'pm disable-user --user 0 com.samsung.android.knox.kpu'
-      },
-      {
-        stepNumber: 4,
-        actionAr: 'إعادة التشغيل وفتح كافة صلاحيات الهاتف وتفليش الرومات المعدلة',
-        actionEn: 'Reboot device with all bootloader & flashing restrictions lifted',
-        commandPreview: 'fastboot reboot'
-      }
-    ]
-  },
-  {
     id: 'battery-pmic-calibrate',
     titleAr: 'معايرة طاقة البطارية وإصلاح الشحن الوهمي (Battery Calibration & PMIC Reset)',
     titleEn: 'Battery Fuel Gauge & PMIC Power Reset',
@@ -441,6 +488,48 @@ export const FAULT_REPAIRS: FaultRepairItem[] = [
       }
     ]
   },
+  {
+    id: 'audio-codec-mic-fix',
+    titleAr: 'إصلاح اختفاء الصوت والميكروفون وسماعة المكالمات (Audio Codec DSP Fix)',
+    titleEn: 'Audio Codec IC & Microphone / Speaker DSP Calibration',
+    category: 'HARDWARE',
+    severity: 'MEDIUM',
+    descriptionAr: 'إصلاح تعطل الصوت أثناء المكالمات، وتوقف الميكروفون عن التسجيل، أو عدم استجابة سماعة الأذن بعد التحديث.',
+    descriptionEn: 'Calibrates Audio DSP ALSA registers and resets Qualcomm WCD9385 / Cirrus Logic audio amplifier gains.',
+    icon: 'AlertOctagon',
+    supportedModes: ['ADB_ONLINE', 'FASTBOOT', 'EDL_9008'],
+    supportedChipsets: ['qualcomm', 'mediatek', 'samsung_exynos', 'apple_ios'],
+    riskAr: 'آمن تماماً',
+    riskEn: 'Safe - resets digital audio mixer pathways',
+    protocolPipeline: [
+      {
+        stepNumber: 1,
+        actionAr: 'فحص استجابة شريحة الصوت (Audio Codec I2C / SoundWire Bus)',
+        actionEn: 'Query ALSA sound card list and probe WCD codec driver',
+        commandPreview: 'adb shell cat /proc/asound/cards'
+      },
+      {
+        stepNumber: 2,
+        actionAr: 'إعادة تعيين قنوات الصوت ومسار مكبر الصوت الرقمي Smart PA',
+        actionEn: 'Reset audio calibration tables in /vendor/etc/audio_policy_configuration.xml',
+        commandPreview: 'adb shell setprop vendor.audio.reset.dsp 1'
+      },
+      {
+        stepNumber: 3,
+        actionAr: 'إعادة تفليش قطاع dsp.img و dtbo.img للمطابقة الدقيقة مع الهاردوير',
+        actionEn: 'Flash clean stock dsp partition',
+        commandPreview: 'fastboot flash dsp dsp.img'
+      },
+      {
+        stepNumber: 4,
+        actionAr: 'إعادة التشغيل وتفعيل الصوت المحيطي وسماعة المكالمات بنقاء كامل',
+        actionEn: 'Reboot and test microphone / ear-speaker output',
+        commandPreview: 'fastboot reboot'
+      }
+    ]
+  },
+
+  // 5. DATA EXTRACTION
   {
     id: 'emergency-data-dump',
     titleAr: 'سحب واستخراج البيانات المحذوفة والصور من الهواتف المعطلة (Forensic Data Dump)',

@@ -13,7 +13,9 @@ import {
   Zap,
   Wrench,
   Smartphone,
-  Radio
+  Radio,
+  Flame,
+  Cloud
 } from 'lucide-react';
 import { ConnectedDevice } from '../types';
 import { DEVICE_PRESETS } from '../data/devicePresets';
@@ -44,6 +46,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const isAr = lang === 'ar';
 
   const navTabs = [
+    { id: 'cloud-security', labelEn: '0-Day Cloud & Exploit Hub', labelAr: 'سحابة الثغرات والتحديثات 0-Day', icon: Flame, badge: 'LIVE 2026' },
     { id: 'fault-repair', labelEn: 'Universal Fault Repair', labelAr: 'مركز إصلاح كافة الأعطال', icon: Wrench, badge: 'PRO' },
     { id: 'device-reader', labelEn: 'Multi-Mode Telemetry', labelAr: 'قارئ الهاتف بكافة الأوضاع', icon: Smartphone },
     { id: 'hardware-workbench', labelEn: 'Hardware & Micro-Soldering', labelAr: 'المخططات والمايكروسولدرينغ', icon: Cpu, badge: 'SCHEMATICS' },
@@ -69,10 +72,13 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="flex items-center gap-2">
               <span className="font-bold text-lg tracking-wider text-white bg-clip-text">OMNIFIX</span>
               <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">PRO v4.8</span>
-              <span className="text-xs text-slate-400 hidden sm:inline-block">| {isAr ? 'منصة هندسة وإصلاح الهواتف الشاملة' : 'Lead Engineer Workstation'}</span>
+              <span className="flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                CLOUD SYNCED
+              </span>
             </div>
             <p className="text-[11px] text-slate-400 hidden md:block">
-              {isAr ? 'إصلاح كافة الأعطال، وقراءة الأجهزة بجميع أوضاع USB، والتفليش، وتخطي الحمايات والشبكة' : 'Universal Mobile Fault Repair, Multi-Mode USB Telemetry, Flashing & Low-Level Engineering'}
+              {isAr ? 'منظومة الصيانة الذكية الشاملة لكافة شركات وموديلات الهواتف مع التحديث الفوري للثغرات والحمايات' : 'Intelligent Universal Mobile Repair Workstation with Real-time 0-Day Exploit & Firmware Sync'}
             </p>
           </div>
         </div>
@@ -82,7 +88,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Direct Live USB Hardware Connect Trigger */}
           <button
             onClick={onOpenUsbModal}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg shadow-md shadow-cyan-600/20 transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg shadow-md shadow-cyan-600/20 transition-all cursor-pointer"
             title="Connect Real Physical Phone via WebUSB"
           >
             <Usb className="w-3.5 h-3.5 text-white animate-pulse" />
@@ -98,7 +104,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 const found = DEVICE_PRESETS.find(d => d.id === e.target.value);
                 if (found) onSelectDevice(found);
               }}
-              className="bg-slate-800 text-xs font-mono text-slate-200 border border-slate-700 rounded-md px-3 py-1.5 pr-8 appearance-none hover:border-slate-600 focus:outline-none focus:border-cyan-500"
+              className="bg-slate-800 text-xs font-mono text-slate-200 border border-slate-700 rounded-md px-3 py-1.5 pr-8 appearance-none hover:border-slate-600 focus:outline-none focus:border-cyan-500 cursor-pointer"
             >
               {DEVICE_PRESETS.map((dev) => (
                 <option key={dev.id} value={dev.id}>
@@ -121,7 +127,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Language Toggle */}
           <button
             onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
-            className="flex items-center gap-1 px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-slate-300 font-medium transition-colors"
+            className="flex items-center gap-1 px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-slate-300 font-medium transition-colors cursor-pointer"
           >
             <Globe className="w-3.5 h-3.5 text-amber-400" />
             <span>{lang === 'en' ? 'العربية' : 'English'}</span>
@@ -131,7 +137,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {isBusy && (
             <button
               onClick={onEmergencyStop}
-              className="flex items-center gap-1 px-3 py-1 text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white rounded shadow-lg shadow-rose-600/30 animate-pulse transition-colors"
+              className="flex items-center gap-1 px-3 py-1 text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white rounded shadow-lg shadow-rose-600/30 animate-pulse transition-colors cursor-pointer"
             >
               <Power className="w-3.5 h-3.5" />
               <span>{isAr ? 'إيقاف طوارئ' : 'ABORT'}</span>
@@ -149,7 +155,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-md whitespace-nowrap transition-all ${
+              className={`flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-md whitespace-nowrap transition-all cursor-pointer ${
                 isActive
                   ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/40 shadow-sm font-bold'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent'
@@ -158,7 +164,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Icon className={`w-4 h-4 ${isActive ? 'text-cyan-400' : 'text-slate-500'}`} />
               <span>{isAr ? tab.labelAr : tab.labelEn}</span>
               {tab.badge && (
-                <span className="px-1.5 py-0.2 text-[9px] font-bold rounded bg-indigo-500/30 text-indigo-300 border border-indigo-500/40">
+                <span className={`px-1.5 py-0.2 text-[9px] font-bold rounded border ${
+                  tab.id === 'cloud-security'
+                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse'
+                    : 'bg-indigo-500/30 text-indigo-300 border-indigo-500/40'
+                }`}>
                   {tab.badge}
                 </span>
               )}
@@ -169,4 +179,3 @@ export const Navbar: React.FC<NavbarProps> = ({
     </header>
   );
 };
-

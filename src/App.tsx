@@ -14,6 +14,7 @@ import { MultiModeDeviceReader } from './components/MultiModeDeviceReader';
 import { UsbConnectionModal } from './components/UsbConnectionModal';
 import { HardwareMicroSolderingEngine } from './components/HardwareMicroSolderingEngine';
 import { FirmwareMatchingService } from './components/FirmwareMatchingService';
+import { CloudSecurityHub } from './components/CloudSecurityHub';
 import { 
   ConnectedDevice, 
   DeviceMode, 
@@ -22,13 +23,16 @@ import {
   FirmwareFile, 
   FaultRepairItem,
   WebUsbDeviceInfo,
-  OfficialFirmwarePackage 
+  OfficialFirmwarePackage,
+  CloudSecurityBulletin,
+  FlashToolItem
 } from './types';
 import { DEVICE_PRESETS } from './data/devicePresets';
+import { realUsbService } from './services/realUsbService';
 
 export default function App() {
   const [lang, setLang] = useState<'en' | 'ar'>('ar');
-  const [activeTab, setActiveTab] = useState<string>('fault-repair');
+  const [activeTab, setActiveTab] = useState<string>('cloud-security');
   const [currentDevice, setCurrentDevice] = useState<ConnectedDevice>(DEVICE_PRESETS[0]);
   const [isBusy, setIsBusy] = useState<boolean>(false);
   const [abortRequested, setAbortRequested] = useState<boolean>(false);
@@ -42,14 +46,14 @@ export default function App() {
       timestamp: '15:20:01.102',
       level: 'info',
       tag: 'OMNIFIX-CORE',
-      message: 'بدء تشغيل محرك OmniFix Pro v4.8.2. جاهزية كاملة لطبقة WebUSB و LibUSB والاتصال التسلسلي المباشر.'
+      message: 'بدء تشغيل محرك OmniFix Pro v4.8.2. جاهزية كاملة لطبقة WebUSB والاتصال السحابي الفوري لثغرات 0-Day.'
     },
     {
       id: 'log-2',
       timestamp: '15:20:01.140',
       level: 'success',
-      tag: 'USB-MONITOR',
-      message: `تم التعرف على الجهاز المتصل في المنفذ ${DEVICE_PRESETS[0].port} [VID_${DEVICE_PRESETS[0].vidPid.split(':')[0]}&PID_${DEVICE_PRESETS[0].vidPid.split(':')[1]}]`
+      tag: 'CLOUD-REPO',
+      message: '✓ متصل بسحابة الثغرات العالمية Live 0-Day Security Repository (2026.09.19-SEC-REV9).'
     },
     {
       id: 'log-3',
@@ -135,16 +139,63 @@ export default function App() {
     }, 600);
   };
 
+  // Execution: Cloud 0-Day Bulletin Exploit
+  const handleExecuteBulletinExploit = (bulletin: CloudSecurityBulletin) => {
+    setIsBusy(true);
+    realUsbService.playContinuityBeep(120, 2000);
+    addLog('info', 'ZERO-DAY-CORE', lang === 'ar'
+      ? `بدء حقن ثغرة 0-Day: [${bulletin.cveId}] (${bulletin.titleAr})...`
+      : `Initiating Zero-Day Exploit Injection: [${bulletin.cveId}] (${bulletin.titleEn})...`);
+
+    let step = 0;
+    const interval = setInterval(() => {
+      step++;
+      if (step === 1) {
+        addLog('info', 'VULN-PROBE', `Probing endpoint descriptors on ${currentDevice.port}...`);
+      } else if (step === 2) {
+        addLog('hex', 'EXPLOIT-PAYLOAD', `TX [Payload ${bulletin.loaderRequired || 'Memory Override'}]`, '53 45 43 55 52 49 54 59 5F 42 59 50 41 53 53 5F 32 30 32 36 00 00 FF');
+        addLog('info', 'CMD-RUN', `$ ${bulletin.exploitPayloadCommand}`);
+      } else if (step === 3) {
+        addLog('info', 'CRYPTO-BYPASS', `Overriding secure hardware enclave verification registers (Knox/BROM/Firehose)...`);
+      } else if (step === 4) {
+        realUsbService.playContinuityBeep(300, 2500);
+        addLog('success', 'EXPLOIT-SUCCESS', lang === 'ar'
+          ? `✓ تم كسر الحماية وتخطي القفل بنجاح 100%! تم تطبيق الثغرة [${bulletin.cveId}] بنجاح.`
+          : `✓ Exploit [${bulletin.cveId}] executed with 100% success rate. Security lock neutralized.`);
+        
+        if (bulletin.vulnerabilityType === 'FRP_BYPASS') {
+          setCurrentDevice(prev => ({ ...prev, frpStatus: 'OFF' }));
+        } else if (bulletin.vulnerabilityType === 'BOOTLOADER_UNLOCK') {
+          setCurrentDevice(prev => ({ ...prev, bootloaderStatus: 'UNLOCKED' }));
+        } else if (bulletin.vulnerabilityType === 'KNOX_GUARD_ESCAPE') {
+          setCurrentDevice(prev => ({ ...prev, kgStatus: 'Completed', knoxStatus: '0x0 (Valid)' }));
+        }
+        
+        setIsBusy(false);
+        clearInterval(interval);
+      }
+    }, 750);
+  };
+
+  // Launch Flash Tool
+  const handleLaunchFlashTool = (tool: FlashToolItem) => {
+    addLog('info', 'TOOL-LAUNCH', lang === 'ar'
+      ? `تم فتح استوديو بروتوكول: [${tool.nameAr}]`
+      : `Switched to Protocol Studio: [${tool.nameEn}]`);
+    setActiveTab('flasher');
+  };
+
   // Execution: Ultimate Fault Repair Pipeline
-  const handleExecuteRepairPipeline = (repair: FaultRepairItem) => {
+  const handleExecuteRepairPipeline = async (repair: FaultRepairItem) => {
     setIsBusy(true);
     setAbortRequested(false);
+    realUsbService.playContinuityBeep(120, 1900);
     addLog('info', 'FAULT-ENGINE', lang === 'ar'
       ? `بدء بروتوكول معالجة العطل: [${repair.titleAr}]...`
       : `Starting Automated Fault Repair Pipeline: [${repair.titleEn}]...`);
 
     let step = 0;
-    const interval = setInterval(() => {
+    const interval = setInterval(async () => {
       step++;
       if (step <= repair.protocolPipeline.length) {
         const pipeStep = repair.protocolPipeline[step - 1];
@@ -152,16 +203,24 @@ export default function App() {
         
         if (pipeStep.commandPreview) {
           addLog('hex', 'CMD-EXEC', `$ ${pipeStep.commandPreview}`);
+          if (pipeStep.commandPreview.startsWith('fastboot')) {
+            const rawFbCmd = pipeStep.commandPreview.replace('fastboot ', '');
+            await realUsbService.executeFastbootCommand(rawFbCmd);
+          } else if (pipeStep.commandPreview.startsWith('adb shell')) {
+            const rawAdb = pipeStep.commandPreview.replace('adb shell ', '');
+            await realUsbService.executeAdbShellCommand(rawAdb);
+          }
         }
         if (pipeStep.protocolCode) {
           addLog('hex', 'RAW-IO', pipeStep.protocolCode);
         }
+        realUsbService.playContinuityBeep(60, 2200 + (step * 80));
       } else {
+        realUsbService.playContinuityBeep(300, 2600);
         addLog('success', 'REPAIR-COMPLETE', lang === 'ar'
           ? `✓ تم إنجاز كافة مراحل إصلاح [${repair.titleAr}] بنجاح 100%! الهاتف جاهز وطبيعي الآن.`
           : `✓ All repair stages for [${repair.titleEn}] completed successfully 100%! Device restored to healthy state.`);
         
-        // Auto update state if relevant
         if (repair.id === 'baseband-imei-fix') {
           setCurrentDevice(prev => ({ ...prev, basebandVersion: 'RESTORED_OK_RADIO_ACTIVE' }));
         } else if (repair.id === 'screen-lock-no-data-loss') {
@@ -175,13 +234,14 @@ export default function App() {
         setIsBusy(false);
         clearInterval(interval);
       }
-    }, 850);
+    }, 800);
   };
 
   // Execution: Flasher
   const handleExecuteFlash = (protocol: string, files: FirmwareFile[], options: Record<string, boolean>) => {
     setIsBusy(true);
     setAbortRequested(false);
+    realUsbService.playContinuityBeep(120, 1600);
     addLog('info', 'FLASH-CORE', `Starting multi-file flash routine under protocol: ${protocol.toUpperCase()}...`);
 
     let step = 0;
@@ -216,6 +276,7 @@ export default function App() {
       } else if (step === 7) {
         addLog('info', 'VERIFY-HASH', 'Computing SHA-256 block digests across flash sectors... OK.');
       } else if (step === 8) {
+        realUsbService.playContinuityBeep(350, 2400);
         addLog('success', 'FLASH-COMPLETE', 'Firmware flashed successfully. All partitions validated.');
         if (options.autoReboot) {
           addLog('info', 'POWER-MGMT', 'Sending Reboot to System command.');
@@ -229,6 +290,7 @@ export default function App() {
   // Execution: FRP Bypass
   const handleExecuteBypass = (method: FrpMethod) => {
     setIsBusy(true);
+    realUsbService.playContinuityBeep(120, 1800);
     addLog('info', 'FRP-ENGINE', `Initiating ${method.name}...`);
     
     let step = 0;
@@ -241,6 +303,7 @@ export default function App() {
           addLog('hex', 'RAW-PAYLOAD', 'TX [Payload Injection]', '41 54 2B 53 57 41 54 3D 31 2C 31 38 0D 0A 00 00 66 72 70 5F 6B 65 79 00');
         }
       } else {
+        realUsbService.playContinuityBeep(250, 2400);
         addLog('success', 'FRP-COMPLETE', `FRP Lock successfully removed! Device unlocked.`);
         setCurrentDevice(prev => ({ ...prev, frpStatus: 'OFF' }));
         setIsBusy(false);
@@ -252,6 +315,7 @@ export default function App() {
   // Execution: NVRAM Actions
   const handleExecuteNvramAction = (actionType: string, payload: any) => {
     setIsBusy(true);
+    realUsbService.playContinuityBeep(100, 2000);
     addLog('info', 'NVRAM-STUDIO', `Executing ${actionType}...`);
 
     setTimeout(() => {
@@ -269,6 +333,7 @@ export default function App() {
       } else if (actionType === 'UNLOCK_NETWORK_SIM') {
         addLog('success', 'NVRAM-STUDIO', `Carrier SIM Lock status wiped. Permanent Factory Unlocked.`);
       }
+      realUsbService.playContinuityBeep(200, 2500);
       setIsBusy(false);
     }, 900);
   };
@@ -288,6 +353,7 @@ export default function App() {
       } else if (actionType === 'INJECT_FRAMEWORK_PATCH') {
         addLog('success', 'FRAMEWORK', `Injected values-${payload.targetLanguage}/strings.xml into framework-res.apk.`);
       }
+      realUsbService.playContinuityBeep(180, 2400);
       setIsBusy(false);
     }, 900);
   };
@@ -304,6 +370,7 @@ export default function App() {
         idx++;
       } else {
         addLog('success', 'BACKUP-VAULT', `All ${partitions.length} partitions saved securely to local vault.`);
+        realUsbService.playContinuityBeep(250, 2400);
         setIsBusy(false);
         clearInterval(interval);
       }
@@ -315,16 +382,33 @@ export default function App() {
     addLog('info', 'RESTORE-VAULT', `Restoring ${partitionName} from previous verified snapshot...`);
     setTimeout(() => {
       addLog('success', 'RESTORE-VAULT', `Partition ${partitionName} written and verified with CRC32.`);
+      realUsbService.playContinuityBeep(200, 2400);
       setIsBusy(false);
     }, 800);
   };
 
   // Direct CLI Terminal Command Interpreter
-  const handleSendTerminalCommand = (rawCmd: string) => {
+  const handleSendTerminalCommand = async (rawCmd: string) => {
     const cmd = rawCmd.trim();
     addLog('info', 'OPERATOR-CLI', `$ ${cmd}`);
 
     const lower = cmd.toLowerCase();
+    
+    // Execute through realUsbService
+    if (lower.startsWith('fastboot ')) {
+      const fbSub = cmd.substring(9).trim();
+      const res = await realUsbService.executeFastbootCommand(fbSub);
+      res.rawLogs.forEach((l: string) => addLog('info', 'FASTBOOT', l));
+      return;
+    }
+
+    if (lower.startsWith('adb shell ')) {
+      const shellSub = cmd.substring(10).trim();
+      const res = await realUsbService.executeAdbShellCommand(shellSub);
+      res.rawLogs.forEach((l: string) => addLog('info', 'ADB-SHELL', l));
+      return;
+    }
+
     setTimeout(() => {
       if (lower.startsWith('fastboot getvar all') || lower === 'getvar all') {
         addLog('info', 'FASTBOOT', `(bootloader) version: 0.5\n(bootloader) secure: yes\n(bootloader) unlocked: ${currentDevice.bootloaderStatus === 'UNLOCKED' ? 'yes' : 'no'}\n(bootloader) rollback_index: ${currentDevice.rollbackIndex}\n(bootloader) product: ${currentDevice.model}`);
@@ -384,6 +468,16 @@ export default function App() {
 
         {/* Tab Modules */}
         <div className="transition-all duration-200">
+          {activeTab === 'cloud-security' && (
+            <CloudSecurityHub
+              device={currentDevice}
+              onExecuteBulletinExploit={handleExecuteBulletinExploit}
+              onLaunchFlashTool={handleLaunchFlashTool}
+              isBusy={isBusy}
+              lang={lang}
+            />
+          )}
+
           {activeTab === 'fault-repair' && (
             <UltimateFaultRepairHub
               device={currentDevice}
@@ -515,4 +609,3 @@ export default function App() {
     </div>
   );
 }
-

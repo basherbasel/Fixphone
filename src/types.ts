@@ -17,7 +17,7 @@ export type DeviceMode =
   | 'SAMSUNG_DOWNLOAD' 
   | 'SPD_DIAG' 
   | 'HUAWEI_COM1' 
-  | 'RECOVERY_SIDELOAD'
+  | 'RECOVERY_SIDELOAD' 
   | 'APPLE_DFU' 
   | 'APPLE_RECOVERY' 
   | 'DISCONNECTED';
@@ -182,6 +182,43 @@ export interface GeneratedCodeSnippet {
   code: string;
 }
 
+// ---------------- CLOUD SECURITY & ZERO-DAY EXPLOIT TYPES ----------------
+
+export interface CloudSecurityBulletin {
+  id: string;
+  cveId: string;
+  titleAr: string;
+  titleEn: string;
+  targetBrand: string;
+  affectedChipsets: ChipsetType[];
+  affectedAndroidRange: string;
+  vulnerabilityType: 'FRP_BYPASS' | 'AUTH_BYPASS' | 'KNOX_GUARD_ESCAPE' | 'BOOTLOADER_UNLOCK' | 'KERNEL_ROOT' | 'BASEBAND_QCN';
+  zeroDayStatus: 'ACTIVE_ZERO_DAY' | 'PATCH_BYPASS_VERIFIED' | 'COMMERCIAL_GRADE';
+  discoveryDate: string;
+  exploitEfficiency: number; // 0 - 100%
+  descriptionAr: string;
+  descriptionEn: string;
+  exploitPayloadCommand: string;
+  patchMitigationAr: string;
+  patchMitigationEn: string;
+  loaderRequired?: string;
+}
+
+export interface FlashToolItem {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+  brandCategory: string;
+  protocol: 'ODIN_LOKE' | 'SAHARA_FIREHOSE' | 'MTK_DA_SP' | 'FASTBOOT_SPARSE' | 'APPLE_RESTORE' | 'SPD_FDL_DIAG' | 'HUAWEI_FASTBOOT';
+  icon: string;
+  descriptionAr: string;
+  descriptionEn: string;
+  supportedModes: DeviceMode[];
+  supportedFiles: ('BL' | 'AP' | 'CP' | 'CSC' | 'PIT' | 'SCATTER' | 'RAWPROGRAM' | 'PATCH' | 'FIREHOSE' | 'DA' | 'PAC' | 'IPSW')[];
+  defaultBaud?: number;
+  supportedChips: ChipsetType[];
+}
+
 // ---------------- HARDWARE & MICRO-SOLDERING TYPES ----------------
 
 export type HardwareCategory = 
@@ -198,12 +235,12 @@ export interface MultimeterTestPoint {
   name: string;
   railName: string;
   location: string;
-  diodeModeHealthy: string; // e.g., "0.450V ~ 0.520V" (Red probe to GND)
+  diodeModeHealthy: string;
   diodeModeToleranceMin: number;
   diodeModeToleranceMax: number;
-  voltageWorking: string; // e.g., "3.8V - 4.2V"
+  voltageWorking: string;
   voltageStandby: string;
-  resistanceToGnd: string; // e.g., "> 50 kΩ"
+  resistanceToGnd: string;
   faultSymptomIfShort: string;
   faultSymptomIfOpen: string;
   diagramCoord: { x: number; y: number };
@@ -211,7 +248,7 @@ export interface MultimeterTestPoint {
 
 export interface BoardviewChip {
   id: string;
-  designator: string; // e.g., "U1001", "PM8150", "U5001"
+  designator: string;
   partNumber: string;
   roleAr: string;
   roleEn: string;
@@ -222,7 +259,7 @@ export interface BoardviewChip {
   height: number;
   color: string;
   pinCount: number;
-  packageType: string; // e.g. "BGA-121", "QFN-32", "WLCSP"
+  packageType: string;
   commonDefects: string[];
 }
 
@@ -230,10 +267,10 @@ export interface MicroSolderingStep {
   stepNumber: number;
   titleAr: string;
   titleEn: string;
-  hotAirTemp: string; // e.g. "360°C - 380°C"
-  airFlow: string; // e.g. "35% - 45%"
-  solderingIronTemp?: string; // e.g. "350°C"
-  solderPasteAlloy: string; // e.g. "Sn63/Pb37 183°C" or "SAC305 Lead-Free 217°C"
+  hotAirTemp: string;
+  airFlow: string;
+  solderingIronTemp?: string;
+  solderPasteAlloy: string;
   stencilType: string;
   procedureAr: string;
   procedureEn: string;
