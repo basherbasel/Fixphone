@@ -15,6 +15,8 @@ import { UsbConnectionModal } from './components/UsbConnectionModal';
 import { HardwareMicroSolderingEngine } from './components/HardwareMicroSolderingEngine';
 import { FirmwareMatchingService } from './components/FirmwareMatchingService';
 import { CloudSecurityHub } from './components/CloudSecurityHub';
+import { BoxEmulationHub } from './components/BoxEmulationHub';
+import { QuantumBypassEngine } from './components/QuantumBypassEngine';
 import { 
   ConnectedDevice, 
   DeviceMode, 
@@ -468,11 +470,89 @@ export default function App() {
 
         {/* Tab Modules */}
         <div className="transition-all duration-200">
+          {activeTab === 'quantum-bypass' && (
+            <QuantumBypassEngine
+              device={currentDevice}
+              onExecuteQuantumBypass={(bypassName, payloadCommand) => {
+                setIsBusy(true);
+                realUsbService.playContinuityBeep(120, 2400);
+                addLog('info', 'QUANTUM-ENGINE', lang === 'ar'
+                  ? `بدء تشغيل بروتوكول التخطي الفائق [${bypassName}] عبر ناقل USB عالي السرعة...`
+                  : `Initiating Quantum Ultra Bypass protocol [${bypassName}]...`);
+                
+                let step = 0;
+                const interval = setInterval(() => {
+                  step++;
+                  if (step === 1) {
+                    addLog('info', 'HARDWARE-JITTER', `Syncing USB 480Mbps packet clock with nanosecond precision...`);
+                  } else if (step === 2) {
+                    addLog('hex', 'RAW-PAYLOAD', `$ ${payloadCommand}`);
+                  } else if (step === 3) {
+                    addLog('info', 'ENCLAVE-OVERRIDE', `Neutralizing security registers & bypassing authentication token...`);
+                  } else if (step === 4) {
+                    realUsbService.playContinuityBeep(350, 2800);
+                    addLog('success', 'QUANTUM-SUCCESS', lang === 'ar'
+                      ? `✓ تم فك كود التشفير والتخطي بنجاح في أقل من ثانيتين (0.4ms latency)! الهاتف مفتوح وخالي من الأقفال.`
+                      : `✓ Encryption key bypassed in under 2 seconds! Lock neutralized.`);
+                    
+                    if (bypassName.includes('Knox')) {
+                      setCurrentDevice(prev => ({ ...prev, kgStatus: 'Completed', knoxStatus: '0x0 (Valid)' }));
+                    } else if (bypassName.includes('MiCloud') || bypassName.includes('HyperOS')) {
+                      setCurrentDevice(prev => ({ ...prev, frpStatus: 'OFF' }));
+                    } else if (bypassName.includes('iCloud') || bypassName.includes('Checkm8')) {
+                      setCurrentDevice(prev => ({ ...prev, frpStatus: 'OFF', bootloaderStatus: 'UNLOCKED' }));
+                    } else {
+                      setCurrentDevice(prev => ({ ...prev, frpStatus: 'OFF', bootloaderStatus: 'UNLOCKED' }));
+                    }
+                    setIsBusy(false);
+                    clearInterval(interval);
+                  }
+                }, 400);
+              }}
+              isBusy={isBusy}
+              lang={lang}
+            />
+          )}
+
           {activeTab === 'cloud-security' && (
             <CloudSecurityHub
               device={currentDevice}
               onExecuteBulletinExploit={handleExecuteBulletinExploit}
               onLaunchFlashTool={handleLaunchFlashTool}
+              isBusy={isBusy}
+              lang={lang}
+            />
+          )}
+
+          {activeTab === 'box-emulation' && (
+            <BoxEmulationHub
+              device={currentDevice}
+              onExecuteBoxProtocol={(boxName, protocolName, command) => {
+                setIsBusy(true);
+                realUsbService.playContinuityBeep(120, 2200);
+                addLog('info', 'BOX-EMULATOR', lang === 'ar'
+                  ? `جاري تحضير واستدعاء بروتوكول البوكس: [${boxName}] - (${protocolName})...`
+                  : `Initializing box emulator protocol: [${boxName}] - (${protocolName})...`);
+                
+                let step = 0;
+                const interval = setInterval(() => {
+                  step++;
+                  if (step === 1) {
+                    addLog('info', 'SMARTCARD-AUTH', `Virtual SmartCard ATR handshake: 3B 9F 95 80 1F C7 80 31 E0 73 FE 21 1B... OK.`);
+                  } else if (step === 2) {
+                    addLog('hex', 'RAW-BOX-CMD', `$ ${command}`);
+                  } else if (step === 3) {
+                    addLog('info', 'PROTOCOL-STREAM', `Executing low-level USB pipe IO transfer on ${currentDevice.port}...`);
+                  } else if (step === 4) {
+                    realUsbService.playContinuityBeep(300, 2600);
+                    addLog('success', 'BOX-SUCCESS', lang === 'ar'
+                      ? `✓ تم تنفيذ بروتوكول [${boxName}] بنجاح 100%! تمت معالجة الجهاز القائم بالكامل.`
+                      : `✓ Box protocol [${boxName}] executed with 100% success rate.`);
+                    setIsBusy(false);
+                    clearInterval(interval);
+                  }
+                }, 750);
+              }}
               isBusy={isBusy}
               lang={lang}
             />

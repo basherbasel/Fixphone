@@ -46,7 +46,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   const isAr = lang === 'ar';
 
   const navTabs = [
+    { id: 'quantum-bypass', labelEn: 'Quantum Ultra Bypass', labelAr: 'التخطي السريع والفك الفائق', icon: Zap, badge: 'ULTRA 0.4ms' },
     { id: 'cloud-security', labelEn: '0-Day Cloud & Exploit Hub', labelAr: 'سحابة الثغرات والتحديثات 0-Day', icon: Flame, badge: 'LIVE 2026' },
+    { id: 'box-emulation', labelEn: 'Box & Dongle Emulators', labelAr: 'محاكي البوكسات والدونجلات العالمية', icon: Wrench, badge: 'PRO BOXES' },
     { id: 'fault-repair', labelEn: 'Universal Fault Repair', labelAr: 'مركز إصلاح كافة الأعطال', icon: Wrench, badge: 'PRO' },
     { id: 'device-reader', labelEn: 'Multi-Mode Telemetry', labelAr: 'قارئ الهاتف بكافة الأوضاع', icon: Smartphone },
     { id: 'hardware-workbench', labelEn: 'Hardware & Micro-Soldering', labelAr: 'المخططات والمايكروسولدرينغ', icon: Cpu, badge: 'SCHEMATICS' },
