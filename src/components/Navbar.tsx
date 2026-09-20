@@ -17,7 +17,8 @@ import {
   Flame,
   Cloud,
   Monitor,
-  Database
+  Database,
+  RotateCcw
 } from 'lucide-react';
 import { ConnectedDevice } from '../types';
 import { DEVICE_PRESETS } from '../data/devicePresets';
@@ -51,6 +52,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const navTabs = [
     { id: 'smart-1click', labelEn: 'Smart 1-Click Studio', labelAr: 'الاستوديو الذكي للضغط الواحدة', icon: Sparkles, badge: 'AUTO 2026' },
+    { id: 'dead-boot', labelEn: 'Dead Boot Recovery', labelAr: 'إحياء الهواتف الميتة', icon: RotateCcw, badge: 'UNBRICK' },
     { id: 'quantum-bypass', labelEn: 'Quantum Ultra Bypass', labelAr: 'التخطي السريع والفك الفائق', icon: Zap, badge: 'ULTRA 0.4ms' },
     { id: 'oem-database', labelEn: '2018-2026 OEM Database', labelAr: 'قاعدة الموديلات الشاملة JSON', icon: Database, badge: 'OEM JSON' },
     { id: 'cloud-security', labelEn: '0-Day Cloud & Exploit Hub', labelAr: 'سحابة الثغرات والتحديثات 0-Day', icon: Flame, badge: 'LIVE 2026' },

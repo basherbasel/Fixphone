@@ -63,9 +63,10 @@ ${logContent.slice(0, 8000)}
 Return a strictly valid JSON object with the following schema:
 {
   "summary": "Short 1-2 sentence executive summary of the issue",
-  "rootCause": "Detailed explanation of what failed (e.g., null pointer in modem driver, dm-verity corruption, eMMC block error, FRP lock active)",
+  "rootCause": "Detailed explanation of what failed (e.g., null pointer in modem driver, PMIC power rail short, dm-verity corruption, eMMC block error)",
+  "issueType": "Hardware Failure" | "Software Glitch" | "Firmware Incompatibility",
   "severity": "CRITICAL" | "HIGH" | "MEDIUM" | "INFO",
-  "culpritModule": "Subsystem or partition responsible (e.g. /dev/block/bootdevice/by-name/super, com.android.phone, Qualcomm modem_subsystem)",
+  "culpritModule": "Subsystem or partition responsible (e.g. /dev/block/bootdevice/by-name/super, PM8350 PMIC, Qualcomm modem_subsystem)",
   "recommendedSteps": [
     "Step 1 with specific tool command or protocol step",
     "Step 2",

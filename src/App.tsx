@@ -21,6 +21,7 @@ import { SmartAgentInspectorModal } from './components/SmartAgentInspectorModal'
 import { WindowsInstallerModal } from './components/WindowsInstallerModal';
 import { OemDatabaseBrowser } from './components/OemDatabaseBrowser';
 import { SmartUsbOneClickStudio } from './components/SmartUsbOneClickStudio';
+import { DeadBootRecoveryStudio } from './components/DeadBootRecoveryStudio';
 import { 
   ConnectedDevice, 
   DeviceMode, 
@@ -38,7 +39,8 @@ import { realUsbService } from './services/realUsbService';
 
 export default function App() {
   const [lang, setLang] = useState<'en' | 'ar'>('ar');
-  const [activeTab, setActiveTab] = useState<string>('cloud-security');
+  const [activeTab, setActiveTab] = useState<string>('smart-1click');
+  const [selectedHardwareGuideId, setSelectedHardwareGuideId] = useState<string | undefined>(undefined);
   const [currentDevice, setCurrentDevice] = useState<ConnectedDevice>(DEVICE_PRESETS[0]);
   const [isBusy, setIsBusy] = useState<boolean>(false);
   const [abortRequested, setAbortRequested] = useState<boolean>(false);
@@ -486,6 +488,15 @@ export default function App() {
             />
           )}
 
+          {activeTab === 'dead-boot' && (
+            <DeadBootRecoveryStudio
+              device={currentDevice}
+              lang={lang}
+              onAddLog={addLog}
+              onNavigateToFlasher={() => setActiveTab('flasher')}
+            />
+          )}
+
           {activeTab === 'oem-database' && (
             <OemDatabaseBrowser lang={lang} />
           )}
@@ -601,6 +612,7 @@ export default function App() {
           {activeTab === 'hardware-workbench' && (
             <HardwareMicroSolderingEngine
               device={currentDevice}
+              initialGuideId={selectedHardwareGuideId}
               lang={lang}
             />
           )}
@@ -641,6 +653,7 @@ export default function App() {
               device={currentDevice}
               onApplyFix={(cmd) => handleSendTerminalCommand(cmd)}
               onNavigateToHardwareRepair={(guideId) => {
+                if (guideId) setSelectedHardwareGuideId(guideId);
                 setActiveTab('hardware-workbench');
               }}
               onNavigateToFirmwareMatch={() => {

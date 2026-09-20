@@ -31,17 +31,32 @@ import { InteractivePcbBitmapExplorer } from './InteractivePcbBitmapExplorer';
 interface HardwareMicroSolderingEngineProps {
   device: ConnectedDevice;
   onSelectSoftwareRepair?: (repairId: string) => void;
+  initialGuideId?: string;
   lang: 'en' | 'ar';
 }
 
 export const HardwareMicroSolderingEngine: React.FC<HardwareMicroSolderingEngineProps> = ({
   device,
   onSelectSoftwareRepair,
+  initialGuideId,
   lang
 }) => {
   const isAr = lang === 'ar';
   const [subTab, setSubTab] = useState<'bitmap' | 'schematics'>('bitmap');
-  const [selectedGuideId, setSelectedGuideId] = useState<string>(HARDWARE_REPAIR_GUIDES[0].id);
+  const [selectedGuideId, setSelectedGuideId] = useState<string>(
+    initialGuideId || HARDWARE_REPAIR_GUIDES[0].id
+  );
+
+  React.useEffect(() => {
+    if (initialGuideId) {
+      setSelectedGuideId(initialGuideId);
+      const matched = HARDWARE_REPAIR_GUIDES.find(g => g.id === initialGuideId);
+      if (matched) {
+        if (matched.testPoints?.[0]) setSelectedTestPoint(matched.testPoints[0]);
+        if (matched.boardChips?.[0]) setSelectedChip(matched.boardChips[0]);
+      }
+    }
+  }, [initialGuideId]);
   const [activeCategory, setActiveCategory] = useState<HardwareCategory | 'ALL'>('ALL');
   const [selectedTestPoint, setSelectedTestPoint] = useState<MultimeterTestPoint | null>(
     HARDWARE_REPAIR_GUIDES[0].testPoints[0]

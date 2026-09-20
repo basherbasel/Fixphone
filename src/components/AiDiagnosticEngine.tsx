@@ -16,6 +16,97 @@ import {
 } from 'lucide-react';
 import { ConnectedDevice } from '../types';
 import { FaultDecisionTree } from './FaultDecisionTree';
+import { HARDWARE_REPAIR_GUIDES } from '../data/hardwareRepairGuides';
+
+const detectHardwareGuideId = (text: string): string => {
+  const lower = (text || '').toLowerCase();
+  if (lower.includes('charg') || lower.includes('vbus') || lower.includes('type-c') || lower.includes('battery')) {
+    return 'charging-vbus-failure';
+  }
+  if (lower.includes('display') || lower.includes('lcd') || lower.includes('amoled') || lower.includes('backlight') || lower.includes('screen')) {
+    return 'display-backlight-oled';
+  }
+  if (lower.includes('baseband') || lower.includes('ril') || lower.includes('sim') || lower.includes('modem') || lower.includes('imei') || lower.includes('nvram')) {
+    return 'baseband-rf-transceiver';
+  }
+  return 'power-pmic-buck-rail-failure';
+};
+
+const HardwarePcbLinkCard: React.FC<{
+  guideId: string;
+  onNavigateToHardwareRepair?: (guideId: string) => void;
+  lang: 'en' | 'ar';
+}> = ({ guideId, onNavigateToHardwareRepair, lang }) => {
+  const isAr = lang === 'ar';
+  const guide = HARDWARE_REPAIR_GUIDES.find(g => g.id === guideId) || HARDWARE_REPAIR_GUIDES[0];
+
+  return (
+    <div className="p-3.5 bg-gradient-to-r from-indigo-950/90 via-slate-950 to-slate-900 border border-indigo-500/50 rounded-xl space-y-3 shadow-xl">
+      <div className="flex items-center justify-between border-b border-indigo-500/20 pb-2 flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 rounded-lg bg-indigo-500/20 text-indigo-300">
+            <Cpu className="w-4 h-4 animate-pulse" />
+          </div>
+          <h5 className="text-xs font-bold text-indigo-300 uppercase tracking-wider">
+            {isAr ? 'خريطة الـ PCB والخطوات التوجيهية للإصلاح الفيزيائي (Auto-Linked PCB Hardware Guide)' : 'Auto-Linked Hardware PCB & Micro-Soldering Guide'}
+          </h5>
+        </div>
+        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20">
+          HARDWARE DIAGNOSIS LINKED
+        </span>
+      </div>
+
+      <div className="space-y-1">
+        <h6 className="text-xs font-bold text-white">
+          {isAr ? guide.titleAr : guide.titleEn}
+        </h6>
+        <p className="text-[11px] text-slate-300 leading-relaxed">
+          {isAr ? guide.symptomAr : guide.symptomEn}
+        </p>
+      </div>
+
+      {/* Target Chips & Testpads */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] font-mono">
+        <div className="p-2 rounded bg-slate-900/90 border border-slate-800">
+          <span className="text-slate-400 block mb-0.5">{isAr ? 'الآيسيهات المسببة للعطل:' : 'Affected Board Chips:'}</span>
+          <span className="text-cyan-300 font-bold">{guide.affectedComponents.join(', ')}</span>
+        </div>
+        <div className="p-2 rounded bg-slate-900/90 border border-slate-800">
+          <span className="text-slate-400 block mb-0.5">{isAr ? 'حرارة الهوت أير الموصى بها:' : 'Recommended Hot-Air Temp:'}</span>
+          <span className="text-amber-300 font-bold">{guide.microSolderingSteps[0]?.hotAirTemp || '350°C - 365°C'}</span>
+        </div>
+      </div>
+
+      {/* Test points preview */}
+      {guide.testPoints?.length > 0 && (
+        <div className="p-2 rounded bg-black/80 border border-slate-800 space-y-1 font-mono text-[10px]">
+          <span className="text-slate-400 font-bold block">{isAr ? 'نقاط فحص الملتيميتر المباشرة (DMM Testpads):' : 'Key Multimeter Test Points:'}</span>
+          {guide.testPoints.slice(0, 2).map((tp, idx) => (
+            <div key={idx} className="flex items-center justify-between text-slate-300 border-b border-slate-800/60 pb-1 last:border-0 last:pb-0">
+              <span className="text-cyan-400 font-bold">{tp.name}</span>
+              <span className="text-emerald-400 font-bold">Diode: {tp.diodeModeHealthy}</span>
+              <span className="text-slate-400">{tp.voltageWorking}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Navigation button */}
+      <button
+        onClick={() => onNavigateToHardwareRepair?.(guide.id)}
+        className="w-full py-2.5 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white rounded-lg font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 transition-all cursor-pointer"
+      >
+        <Wrench className="w-4 h-4" />
+        <span>
+          {isAr
+            ? `فتح خريطة الـ PCB والمايكروسولدرينغ التفاعلية لـ (${guide.affectedComponents[0] || 'Hardware'})`
+            : `OPEN INTERACTIVE PCB BITMAP & DMM WORKBENCH (${guide.affectedComponents[0] || 'Hardware'})`}
+        </span>
+        <ArrowRight className="w-4 h-4 rtl:rotate-180" />
+      </button>
+    </div>
+  );
+};
 
 interface AiDiagnosticEngineProps {
   device: ConnectedDevice;
@@ -365,6 +456,15 @@ export const AiDiagnosticEngine: React.FC<AiDiagnosticEngineProps> = ({
                       : copilotResponse.safetyWarnings}
                   </p>
                 </div>
+
+                {/* Hardware PCB Map Auto-Linked Card */}
+                {copilotDomain === 'HARDWARE' && (
+                  <HardwarePcbLinkCard
+                    guideId={detectHardwareGuideId(`${copilotResponse.problemDiagnosis} ${copilotResponse.category}`)}
+                    onNavigateToHardwareRepair={onNavigateToHardwareRepair}
+                    lang={lang}
+                  />
+                )}
               </div>
 
               {/* Dynamic Action Buttons */}
@@ -581,6 +681,23 @@ export const AiDiagnosticEngine: React.FC<AiDiagnosticEngineProps> = ({
                       ))}
                     </div>
                   </div>
+                )}
+
+                {/* Auto-Linked PCB Map & Hardware Repair Guide Card */}
+                {(analysisResult.issueType === 'Hardware Failure' || 
+                  analysisResult.summary?.toLowerCase().includes('hardware') ||
+                  analysisResult.culpritModule?.toLowerCase().includes('hardware') ||
+                  analysisResult.culpritModule?.toLowerCase().includes('pmic') ||
+                  analysisResult.culpritModule?.toLowerCase().includes('power') ||
+                  analysisResult.culpritModule?.toLowerCase().includes('baseband') ||
+                  analysisResult.culpritModule?.toLowerCase().includes('display') ||
+                  analysisResult.culpritModule?.toLowerCase().includes('charging') ||
+                  analysisResult.summary?.toLowerCase().includes('panic')) && (
+                  <HardwarePcbLinkCard
+                    guideId={detectHardwareGuideId(`${analysisResult.summary} ${analysisResult.culpritModule}`)}
+                    onNavigateToHardwareRepair={onNavigateToHardwareRepair}
+                    lang={lang}
+                  />
                 )}
               </div>
             ) : (
