@@ -19,6 +19,8 @@ import { BoxEmulationHub } from './components/BoxEmulationHub';
 import { QuantumBypassEngine } from './components/QuantumBypassEngine';
 import { SmartAgentInspectorModal } from './components/SmartAgentInspectorModal';
 import { WindowsInstallerModal } from './components/WindowsInstallerModal';
+import { OemDatabaseBrowser } from './components/OemDatabaseBrowser';
+import { SmartUsbOneClickStudio } from './components/SmartUsbOneClickStudio';
 import { 
   ConnectedDevice, 
   DeviceMode, 
@@ -476,6 +478,18 @@ export default function App() {
 
         {/* Tab Modules */}
         <div className="transition-all duration-200">
+          {activeTab === 'smart-1click' && (
+            <SmartUsbOneClickStudio
+              device={currentDevice}
+              lang={lang}
+              onAddLog={addLog}
+            />
+          )}
+
+          {activeTab === 'oem-database' && (
+            <OemDatabaseBrowser lang={lang} />
+          )}
+
           {activeTab === 'quantum-bypass' && (
             <QuantumBypassEngine
               device={currentDevice}

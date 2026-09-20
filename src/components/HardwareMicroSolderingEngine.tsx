@@ -26,6 +26,7 @@ import {
   HardwareCategory 
 } from '../types';
 import { HARDWARE_REPAIR_GUIDES } from '../data/hardwareRepairGuides';
+import { InteractivePcbBitmapExplorer } from './InteractivePcbBitmapExplorer';
 
 interface HardwareMicroSolderingEngineProps {
   device: ConnectedDevice;
@@ -39,6 +40,7 @@ export const HardwareMicroSolderingEngine: React.FC<HardwareMicroSolderingEngine
   lang
 }) => {
   const isAr = lang === 'ar';
+  const [subTab, setSubTab] = useState<'bitmap' | 'schematics'>('bitmap');
   const [selectedGuideId, setSelectedGuideId] = useState<string>(HARDWARE_REPAIR_GUIDES[0].id);
   const [activeCategory, setActiveCategory] = useState<HardwareCategory | 'ALL'>('ALL');
   const [selectedTestPoint, setSelectedTestPoint] = useState<MultimeterTestPoint | null>(
@@ -126,7 +128,37 @@ export const HardwareMicroSolderingEngine: React.FC<HardwareMicroSolderingEngine
         </div>
       </div>
 
-      {/* Main Split Interface */}
+      {/* Top Navigation Tabs: Bitmap Explorer vs Schematics Guides */}
+      <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+        <button
+          onClick={() => setSubTab('bitmap')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+            subTab === 'bitmap'
+              ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-600/20'
+              : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+          }`}
+        >
+          <Layers className="w-4 h-4 text-cyan-200" />
+          <span>{isAr ? 'الخريطة التفاعلية للبرودة والبيتماپ (Interactive PCB Bitmap)' : 'Interactive PCB Bitmap Explorer'}</span>
+        </button>
+
+        <button
+          onClick={() => setSubTab('schematics')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+            subTab === 'schematics'
+              ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-600/20'
+              : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+          }`}
+        >
+          <Wrench className="w-4 h-4 text-indigo-200" />
+          <span>{isAr ? 'دليل إصلاح الأعطال المتقدم والمايكروسولدرينغ' : 'Schematics & Micro-Soldering Guides'}</span>
+        </button>
+      </div>
+
+      {subTab === 'bitmap' ? (
+        <InteractivePcbBitmapExplorer device={device} lang={lang} />
+      ) : (
+      /* Main Split Interface */
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Left Column: Fault Guides Directory (4 cols) */}
         <div className="lg:col-span-4 space-y-3">
@@ -466,6 +498,7 @@ export const HardwareMicroSolderingEngine: React.FC<HardwareMicroSolderingEngine
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 };

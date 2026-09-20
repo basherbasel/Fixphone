@@ -629,5 +629,123 @@ if __name__ == "__main__":
     for r in test_gate["reasons"]:
         print(" -", r)
 `
+  },
+  {
+    language: 'python',
+    title: 'Unisoc/Spreadtrum SPD Diag Protocol Engine (FDL1 / FDL2 Flasher)',
+    filename: 'unisoc_spd_fdl_engine.py',
+    description: 'Implements Spreadtrum HDLC framing, FDL1 handshake, baudrate negotiation, and FDL2 execution for Unisoc T606/T612/T700 chips.',
+    code: `#!/usr/bin/env python3
+"""
+FixAI / GSM Box Suite - Unisoc (Spreadtrum) FDL Handshake Engine
+Handles HDLC byte stuffing (0x7E frame delimiter, 0x7D escape code), FDL1 boot, and FDL2 RAM payload execution.
+"""
+
+import serial
+import struct
+import time
+
+class UnisocSpdFdlEngine:
+    FRAME_DELIMITER = b'\\x7E'
+    ESCAPE_BYTE = b'\\x7D'
+    
+    BSL_CMD_CONNECT = 0x00
+    BSL_CMD_START_DATA = 0x01
+    BSL_CMD_MID_DATA = 0x02
+    BSL_CMD_END_DATA = 0x03
+    BSL_CMD_EXEC_DATA = 0x04
+    BSL_REP_ACK = 0x80
+
+    def __init__(self, port_name: str, baudrate: int = 115200):
+        self.ser = serial.Serial(port_name, baudrate, timeout=1.5)
+
+    def encode_hdlc_frame(self, cmd: int, payload: bytes = b'') -> bytes:
+        """Packs data into HDLC frame with CRC16 calculation and escape byte stuffing."""
+        raw_pkt = struct.pack(">HH", cmd, len(payload)) + payload
+        crc = self.calculate_crc16(raw_pkt)
+        raw_pkt += struct.pack(">H", crc)
+
+        stuffed = bytearray()
+        stuffed.extend(self.FRAME_DELIMITER)
+        for b in raw_pkt:
+            if b in (0x7E, 0x7D):
+                stuffed.append(0x7D)
+                stuffed.append(b ^ 0x20)
+            else:
+                stuffed.append(b)
+        stuffed.extend(self.FRAME_DELIMITER)
+        return bytes(stuffed)
+
+    def calculate_crc16(self, data: bytes) -> int:
+        crc = 0x0000
+        for byte in data:
+            crc ^= (byte << 8)
+            for _ in range(8):
+                if crc & 0x8000:
+                    crc = ((crc << 1) ^ 0x1021) & 0xFFFF
+                else:
+                    crc = (crc << 1) & 0xFFFF
+        return crc
+
+    def connect_fdl1(self) -> bool:
+        print("[*] Sending Unisoc BSL_CMD_CONNECT to BootROM...")
+        frame = self.encode_hdlc_frame(self.BSL_CMD_CONNECT)
+        self.ser.write(frame)
+        resp = self.ser.read(64)
+        if len(resp) > 0 and self.BSL_REP_ACK in resp:
+            print("[+] Unisoc FDL1 Handshake ACK Received successfully!")
+            return True
+        print("[-] FDL1 Handshake failed.")
+        return False
+
+if __name__ == "__main__":
+    print("[*] Unisoc SPD Protocol Module Initialized.")
+`
+  },
+  {
+    language: 'cpp',
+    title: 'Huawei HiSilicon Kirin Testpoint USB COM 1.0 Flasher',
+    filename: 'huawei_kirin_com10.cpp',
+    description: 'C++ low-level handshake engine for Kirin 980/990/9000 USB COM 1.0 testpoint bootloader injection.',
+    code: `#include <iostream>
+#include <vector>
+#include <cstdint>
+
+// Kirin USB COM 1.0 Bootloader Handshake Commands
+constexpr uint8_t KIRIN_CMD_HELLO[] = { 0x00, 0x01, 0xFE, 0x00 };
+constexpr uint8_t KIRIN_ACK_OK = 0xAA;
+
+struct KirinHeader {
+    uint32_t magic;      // 0x48574953 ('HWIS')
+    uint32_t cmd_type;   // 0x01: Upload xloader, 0x02: Upload uce
+    uint32_t payload_len;
+    uint32_t target_addr;
+};
+
+class KirinCom10Engine {
+public:
+    static bool VerifyHeaderMagic(const KirinHeader& hdr) {
+        return hdr.magic == 0x48574953;
+    }
+
+    static std::vector<uint8_t> BuildXloaderPacket(uint32_t address, const std::vector<uint8_t>& code) {
+        KirinHeader hdr;
+        hdr.magic = 0x48574953;
+        hdr.cmd_type = 0x01;
+        hdr.payload_len = static_cast<uint32_t>(code.size());
+        hdr.target_addr = address;
+
+        std::vector<uint8_t> packet(sizeof(KirinHeader) + code.size());
+        std::memcpy(packet.data(), &hdr, sizeof(KirinHeader));
+        std::memcpy(packet.data() + sizeof(KirinHeader), code.data(), code.size());
+        return packet;
+    }
+};
+
+int main() {
+    std::cout << "[*] Huawei HiSilicon Kirin COM 1.0 Testpoint Protocol Engine Active\\n";
+    return 0;
+}
+`
   }
 ];

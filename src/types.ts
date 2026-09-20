@@ -1,3 +1,11 @@
+export interface OemDeviceRecord {
+  brand: string;
+  model: string;
+  code_name: string;
+  chipset: string;
+  supported_operations: string[];
+}
+
 export type ChipsetType = 
   | 'mediatek' 
   | 'qualcomm' 

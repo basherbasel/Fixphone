@@ -166,5 +166,32 @@ export const PROFESSIONAL_BOXES: ProfessionalBox[] = [
         actionCommand: 'UFI_DUMP_FULL_EMMC --out-file /dumps/user_data_raw.bin'
       }
     ]
+  },
+  {
+    id: 'miracle-infinity-engine',
+    name: 'Miracle Power Tool & Infinity BEST Suite',
+    vendor: 'Miracle Team & Infinity Box',
+    version: '3.98 PRO',
+    licenseStatus: 'ACTIVATED_PRO',
+    supportedBrands: ['Nokia', 'Google Pixel', 'OnePlus', 'Motorola', 'Infinix', 'Tecno', 'Sony'],
+    icon: 'Terminal',
+    descriptionAr: 'منظومة Miracle & Infinity الفعلية الشاملة لأجهزة نوكيا، وجوجل بكسل، وون بلس، وموتورولا: تفليش الحزم المغلقة، وتفكيك حماية نوكيا HMD، واسترجاع المعرفات.',
+    descriptionEn: 'Miracle & Infinity BEST native suite for Nokia HMD, Google Pixel Tensor, OnePlus, and Motorola EDL flashing & security repair.',
+    featuredProtocols: [
+      {
+        nameAr: 'تخطي حماية وقفل حساب نوكيا HMD Account & FRP',
+        nameEn: 'Nokia HMD Security Token & FRP Reset Protocol',
+        modeRequired: 'EDL_9008 / FASTBOOT',
+        targetChipset: 'Qualcomm / MediaTek / Unisoc',
+        actionCommand: 'MIRACLE_NOKIA_HMD_TOKEN_BYPASS --auth-online --reset-frp'
+      },
+      {
+        nameAr: 'إصلاح وتفليش أجهزة جوجل بكسل Tensor Pixel Bootloader',
+        nameEn: 'Google Pixel Tensor Bootloader Unlock & Factory Flashing',
+        modeRequired: 'FASTBOOT / ADB',
+        targetChipset: 'Google Tensor G1/G2/G3/G4',
+        actionCommand: 'INFINITY_PIXEL_FLASH_SLOT_A_B --reboot-fastbootd'
+      }
+    ]
   }
 ];
