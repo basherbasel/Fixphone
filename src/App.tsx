@@ -19,9 +19,13 @@ import { BoxEmulationHub } from './components/BoxEmulationHub';
 import { QuantumBypassEngine } from './components/QuantumBypassEngine';
 import { SmartAgentInspectorModal } from './components/SmartAgentInspectorModal';
 import { WindowsInstallerModal } from './components/WindowsInstallerModal';
+import { CommandPaletteModal } from './components/CommandPaletteModal';
+import { AiOscilloscopeStudio } from './components/AiOscilloscopeStudio';
+import { ThermalRosinCameraStudio } from './components/ThermalRosinCameraStudio';
 import { OemDatabaseBrowser } from './components/OemDatabaseBrowser';
 import { SmartUsbOneClickStudio } from './components/SmartUsbOneClickStudio';
 import { DeadBootRecoveryStudio } from './components/DeadBootRecoveryStudio';
+import { UfsMemoryProgrammerStudio } from './components/UfsMemoryProgrammerStudio';
 import { 
   ConnectedDevice, 
   DeviceMode, 
@@ -47,6 +51,7 @@ export default function App() {
   const [isUsbModalOpen, setIsUsbModalOpen] = useState<boolean>(false);
   const [isSmartAgentOpen, setIsSmartAgentOpen] = useState<boolean>(false);
   const [isWindowsInstallerOpen, setIsWindowsInstallerOpen] = useState<boolean>(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
   const [realUsbInfo, setRealUsbInfo] = useState<WebUsbDeviceInfo | null>(null);
 
   // Initial Logs
@@ -459,6 +464,7 @@ export default function App() {
         setLang={setLang}
         onOpenUsbModal={() => setIsUsbModalOpen(true)}
         onOpenWindowsInstaller={() => setIsWindowsInstallerOpen(true)}
+        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
       />
 
       {/* Main Workspace Canvas */}
@@ -617,6 +623,27 @@ export default function App() {
             />
           )}
 
+          {activeTab === 'ufs-memory' && (
+            <UfsMemoryProgrammerStudio
+              device={currentDevice}
+              lang={lang}
+            />
+          )}
+
+          {activeTab === 'ai-oscilloscope' && (
+            <AiOscilloscopeStudio
+              device={currentDevice}
+              lang={lang}
+            />
+          )}
+
+          {activeTab === 'thermal-rosin' && (
+            <ThermalRosinCameraStudio
+              device={currentDevice}
+              lang={lang}
+            />
+          )}
+
           {activeTab === 'firmware-matching' && (
             <FirmwareMatchingService
               device={currentDevice}
@@ -757,6 +784,17 @@ export default function App() {
       <WindowsInstallerModal
         isOpen={isWindowsInstallerOpen}
         onClose={() => setIsWindowsInstallerOpen(false)}
+        lang={lang}
+      />
+
+      {/* Quick Command Palette Modal (Ctrl + K) */}
+      <CommandPaletteModal
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onSelectTab={(tabId) => setActiveTab(tabId)}
+        onSelectDevice={(device) => setCurrentDevice(device)}
+        onOpenUsbModal={() => setIsUsbModalOpen(true)}
+        onOpenWindowsInstaller={() => setIsWindowsInstallerOpen(true)}
         lang={lang}
       />
     </div>

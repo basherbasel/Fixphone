@@ -18,7 +18,9 @@ import {
   Cloud,
   Monitor,
   Database,
-  RotateCcw
+  RotateCcw,
+  Search,
+  HardDrive
 } from 'lucide-react';
 import { ConnectedDevice } from '../types';
 import { DEVICE_PRESETS } from '../data/devicePresets';
@@ -34,6 +36,7 @@ interface NavbarProps {
   setLang: (lang: 'en' | 'ar') => void;
   onOpenUsbModal: () => void;
   onOpenWindowsInstaller?: () => void;
+  onOpenCommandPalette?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -46,7 +49,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   lang,
   setLang,
   onOpenUsbModal,
-  onOpenWindowsInstaller
+  onOpenWindowsInstaller,
+  onOpenCommandPalette
 }) => {
   const isAr = lang === 'ar';
 
@@ -60,6 +64,9 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'fault-repair', labelEn: 'Universal Fault Repair', labelAr: 'مركز إصلاح كافة الأعطال', icon: Wrench, badge: 'PRO' },
     { id: 'device-reader', labelEn: 'Multi-Mode Telemetry', labelAr: 'قارئ الهاتف بكافة الأوضاع', icon: Smartphone },
     { id: 'hardware-workbench', labelEn: 'Hardware & Micro-Soldering', labelAr: 'المخططات والمايكروسولدرينغ', icon: Cpu, badge: 'SCHEMATICS' },
+    { id: 'ufs-memory', labelEn: 'UFS & eMMC Programmer', labelAr: 'برمجية ذاكرات UFS/eMMC', icon: HardDrive, badge: 'UFS 4.0' },
+    { id: 'ai-oscilloscope', labelEn: 'AI Oscilloscope 60FPS', labelAr: 'راسم الإشارات والأوسيلوسكوب', icon: Activity, badge: '2.5 GSa/s' },
+    { id: 'thermal-rosin', labelEn: 'Thermal & Rosin Short', labelAr: 'الكاميرا الحرارية وفاحص الشورت', icon: Flame, badge: 'DC INJECT' },
     { id: 'firmware-matching', labelEn: 'Verified Stock ROMs', labelAr: 'الفلاشات الرسمية المعتمدة', icon: ShieldAlert, badge: 'SHA-256' },
     { id: 'flasher', labelEn: 'Multi-ROM Flasher', labelAr: 'تفليش الأنظمة والرومات', icon: Zap },
     { id: 'frp', labelEn: 'FRP & Account Bypass', labelAr: 'تخطي الحسابات و FRP', icon: ShieldAlert },
@@ -81,7 +88,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <span className="font-bold text-lg tracking-wider text-white bg-clip-text">OMNIFIX</span>
-              <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">PRO v4.8</span>
+              <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">PRO v5.0</span>
               <span className="flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 CLOUD SYNCED
@@ -95,6 +102,20 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Device Switcher & USB Connection Triggers */}
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Command Palette Trigger (Ctrl + K) */}
+          {onOpenCommandPalette && (
+            <button
+              onClick={onOpenCommandPalette}
+              className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold bg-slate-950 hover:bg-slate-800 text-slate-300 border border-cyan-500/30 hover:border-cyan-400 rounded-lg transition-all cursor-pointer shadow-sm group"
+            >
+              <Search className="w-3.5 h-3.5 text-cyan-400 group-hover:animate-bounce" />
+              <span className="hidden sm:inline">{isAr ? 'بحث سريع' : 'Quick Search'}</span>
+              <kbd className="hidden sm:inline-block px-1.5 py-0.2 text-[9px] font-mono bg-slate-800 text-cyan-300 rounded border border-slate-700">
+                Ctrl K
+              </kbd>
+            </button>
+          )}
+
           {/* Windows Desktop App Installer Trigger */}
           {onOpenWindowsInstaller && (
             <button

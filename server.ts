@@ -78,7 +78,7 @@ Return a strictly valid JSON object with the following schema:
 }`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.8-flash',
         contents: prompt,
         config: {
           responseMimeType: 'application/json'
@@ -200,7 +200,7 @@ Return strictly the translated XML within a JSON response formatted as:
 }`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.8-flash',
         contents: prompt,
         config: {
           responseMimeType: 'application/json'
@@ -285,7 +285,7 @@ Technician Field Inquiry:
 Domain: ${domainType || 'General / Auto-Detect'}`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.8-flash',
         contents: [
           { role: 'user', parts: [{ text: `${systemInstruction}\n\n${userPrompt}` }] }
         ],
@@ -424,7 +424,7 @@ ${(logText || '').slice(0, 3500)}
 """`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.8-flash',
         contents: [{ role: 'user', parts: [{ text: `${systemInstruction}\n\n${userPrompt}` }] }],
         config: { responseMimeType: 'application/json' }
       });

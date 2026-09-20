@@ -27,6 +27,8 @@ import {
 } from '../types';
 import { HARDWARE_REPAIR_GUIDES } from '../data/hardwareRepairGuides';
 import { InteractivePcbBitmapExplorer } from './InteractivePcbBitmapExplorer';
+import { VoltageBridge } from './VoltageBridge';
+import { audioSynth } from '../utils/audioSynth';
 
 interface HardwareMicroSolderingEngineProps {
   device: ConnectedDevice;
@@ -42,7 +44,7 @@ export const HardwareMicroSolderingEngine: React.FC<HardwareMicroSolderingEngine
   lang
 }) => {
   const isAr = lang === 'ar';
-  const [subTab, setSubTab] = useState<'bitmap' | 'schematics'>('bitmap');
+  const [subTab, setSubTab] = useState<'bitmap' | 'voltage-bridge' | 'schematics'>('bitmap');
   const [selectedGuideId, setSelectedGuideId] = useState<string>(
     initialGuideId || HARDWARE_REPAIR_GUIDES[0].id
   );
@@ -143,8 +145,8 @@ export const HardwareMicroSolderingEngine: React.FC<HardwareMicroSolderingEngine
         </div>
       </div>
 
-      {/* Top Navigation Tabs: Bitmap Explorer vs Schematics Guides */}
-      <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+      {/* Top Navigation Tabs: Bitmap Explorer vs VoltageBridge vs Schematics Guides */}
+      <div className="flex items-center gap-2 border-b border-slate-800 pb-2 flex-wrap">
         <button
           onClick={() => setSubTab('bitmap')}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
@@ -155,6 +157,18 @@ export const HardwareMicroSolderingEngine: React.FC<HardwareMicroSolderingEngine
         >
           <Layers className="w-4 h-4 text-cyan-200" />
           <span>{isAr ? 'الخريطة التفاعلية للبرودة والبيتماپ (Interactive PCB Bitmap)' : 'Interactive PCB Bitmap Explorer'}</span>
+        </button>
+
+        <button
+          onClick={() => setSubTab('voltage-bridge')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+            subTab === 'voltage-bridge'
+              ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg shadow-amber-600/20'
+              : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+          }`}
+        >
+          <Zap className="w-4 h-4 text-amber-200" />
+          <span>{isAr ? 'موديول جسر الفولتية وتفتيش مسارات المعالج (VoltageBridge)' : 'VoltageBridge V-Rail Inspector'}</span>
         </button>
 
         <button
@@ -172,6 +186,8 @@ export const HardwareMicroSolderingEngine: React.FC<HardwareMicroSolderingEngine
 
       {subTab === 'bitmap' ? (
         <InteractivePcbBitmapExplorer device={device} lang={lang} />
+      ) : subTab === 'voltage-bridge' ? (
+        <VoltageBridge device={device} lang={lang} />
       ) : (
       /* Main Split Interface */
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -335,7 +351,14 @@ export const HardwareMicroSolderingEngine: React.FC<HardwareMicroSolderingEngine
                 return (
                   <div
                     key={tp.id}
-                    onClick={() => setSelectedTestPoint(tp)}
+                    onClick={() => {
+                      setSelectedTestPoint(tp);
+                      if (simulatedProbeState === 'SHORT') {
+                        audioSynth.playShortCircuitAlarm();
+                      } else {
+                        audioSynth.playMultimeterBeep();
+                      }
+                    }}
                     style={{
                       left: `${tp.diagramCoord.x}%`,
                       top: `${tp.diagramCoord.y}%`,
